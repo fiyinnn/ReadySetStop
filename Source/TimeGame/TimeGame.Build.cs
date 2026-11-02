@@ -25,6 +25,7 @@ public class TimeGame : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"TimeGame",
+			"TimeGame/Freeze",
 			"TimeGame/Variant_Platforming",
 			"TimeGame/Variant_Platforming/Animation",
 			"TimeGame/Variant_Combat",
