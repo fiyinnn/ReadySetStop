@@ -5,7 +5,12 @@
 #include "Sentinel.h"
 #include "TimeMover.h"
 #include "Components/InputComponent.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyAtmosphereComponent.h"
+#include "Components/SkyLightComponent.h"
+#include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
+#include "Engine/SkyLight.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -52,9 +57,40 @@ void AFreezeGameMode::StartPlay()
 		FreezeLook->Settings.VignetteIntensity = 0.9f;
 	}
 
+	EnsureLighting();
 	BuildCourse();
 
 	Super::StartPlay();
+}
+
+void AFreezeGameMode::EnsureLighting()
+{
+	// If the level has no sun (e.g. an empty level), bring our own sun and sky
+	UWorld* World = GetWorld();
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		return;
+	}
+
+	if (ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator(-40.f, 30.f, 0.f)))
+	{
+		if (UDirectionalLightComponent* Light = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
+		{
+			Light->SetMobility(EComponentMobility::Movable);
+			Light->SetIntensity(8.f);
+			Light->SetAtmosphereSunLight(true);
+		}
+	}
+	World->SpawnActor<ASkyAtmosphere>(ASkyAtmosphere::StaticClass(), FTransform::Identity);
+	if (ASkyLight* Sky = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FTransform::Identity))
+	{
+		if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
+		{
+			SkyComp->SetMobility(EComponentMobility::Movable);
+			SkyComp->SetIntensity(1.f);
+			SkyComp->RecaptureSky();
+		}
+	}
 }
 
 ACharacter* AFreezeGameMode::GetPlayerCharacter() const
@@ -360,7 +396,15 @@ void AFreezeGameMode::SetFrozen(bool bNewFrozen)
 
 void AFreezeGameMode::OnFreezePressed()
 {
-	if (!IsPlaying() || bFrozen) return;
+	if (!IsPlaying()) return;
+
+	// Pressing E again ends the freeze early (the cost was already paid)
+	if (bFrozen)
+	{
+		SetFrozen(false);
+		CooldownLeft = FreezeCooldown;
+		return;
+	}
 	if (CooldownLeft > 0.f)
 	{
 		AddMessage(TEXT("Freeze is recharging..."), FLinearColor(0.7f, 0.7f, 0.7f));
