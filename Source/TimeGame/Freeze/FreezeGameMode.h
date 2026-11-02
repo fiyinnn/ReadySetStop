@@ -59,7 +59,7 @@ public:
 	float StartTime = 360.f;	// seconds on the clock at the start
 	float FreezeCost = 5.f;		// seconds taken off the clock per freeze
 	float FreezeDuration = 3.f;	// how long a freeze lasts
-	float FreezeCooldown = 2.f;	// wait after a freeze ends
+	float FreezeCooldown = 1.f;	// wait after a freeze ends
 	float HitPenalty = 10.f;	// seconds lost when hit, caught or falling
 
 	// --- Called by course actors ---
@@ -88,6 +88,7 @@ public:
 
 protected:
 	void BuildCourse();
+	void EnsureLighting();
 	void InitPlayer(ACharacter* Player);
 	void SetFrozen(bool bNewFrozen);
 	void RespawnPlayer();

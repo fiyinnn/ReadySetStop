@@ -90,7 +90,7 @@ void AFreezeHUD::DrawHUD()
 		if (GM->bFrozen)
 		{
 			Fill = GM->FreezeLeft / FMath::Max(GM->FreezeDuration, 0.01f);
-			Label = TEXT("TIME FROZEN");
+			Label = TEXT("TIME FROZEN   E to resume");
 		}
 		else if (GM->CooldownLeft > 0.f)
 		{
@@ -112,7 +112,7 @@ void AFreezeHUD::DrawHUD()
 		float LW = 0.f, LH = 0.f;
 		GetTextSize(TEXT("Ag"), LW, LH, Small, TextScale);
 		const float H = Pad * 2.f + 26.f * UI + Lines.Num() * LH + 22.f * UI;
-		const float X = Margin, Y = Margin + 100.f * UI;
+		const float X = Margin, Y = SH - Margin - H;
 
 		DrawPanel(X, Y, W, H, PanelColor);
 		DrawRect(Orange, X, Y, 4.f * UI, H);
@@ -126,7 +126,7 @@ void AFreezeHUD::DrawHUD()
 
 	// --- Messages (bottom centre, newest at the bottom) ---
 	{
-		float Y = SH - Margin - 40.f * UI;
+		float Y = SH * 0.62f;
 		for (int32 i = GM->Messages.Num() - 1; i >= 0; --i)
 		{
 			const FFreezeMessage& M = GM->Messages[i];
