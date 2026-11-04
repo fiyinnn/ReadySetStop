@@ -240,24 +240,30 @@ void AFreezeGameMode::BuildCourse()
 	AddCheckpoint(2850.f, FVector(2950.f, 0.f, 100.f),
 		TEXT("Frozen things can't hurt you. Freeze the blade, then walk around it. Press E again to unfreeze early."), 4400.f);
 
-	// --- 3. Freeze a falling crate to use it as a step ----------------------
-	Floor(4400.f, 5000.f, -350.f, 350.f);
+	// --- 3. Freeze the stepping stones into a staircase ----------------------
+	Floor(4400.f, 4800.f, -350.f, 350.f);
 	Block(FVector(6500.f, 0.f, H - 150.f), FVector(2200.f, 700.f, 300.f), FreezeColors::Stone);	// ledge + section 4 floor
-	for (float CratePhase : { 0.f, 0.5f })
 	{
-		MakeMover(FVector(5200.f, 0.f, 0.f), [&](ATimeMover& M)
+		// Three stones bob up and down out of step. Once per cycle their tops line up
+		// at roughly 90 / 180 / 270 cm, a staircase up to the 300 cm ledge.
+		const float StoneX[3] = { 4900.f, 5100.f, 5300.f };
+		const float StonePhase[3] = { 0.2913f, 0.3360f, 0.3900f };
+		for (int32 i = 0; i < 3; ++i)
 		{
-			M.Mode = ETimeMoveMode::Loop;
-			M.Size = FVector(300.f, 360.f, 300.f);
-			M.OffsetA = FVector(0.f, 0.f, 1100.f);
-			M.OffsetB = FVector(0.f, 0.f, -1100.f);
-			M.Period = 14.f;
-			M.Phase = CratePhase;
-			M.Color = FreezeColors::Crate;
-		});
+			MakeMover(FVector(StoneX[i], 0.f, 0.f), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::PingPong;
+				M.Size = FVector(180.f, 400.f, 60.f);
+				M.OffsetA = FVector(0.f, 0.f, -350.f - 30.f);
+				M.OffsetB = FVector(0.f, 0.f, 350.f - 30.f);
+				M.Period = 6.f;
+				M.Phase = StonePhase[i];
+				M.Color = FreezeColors::Platform;
+			});
+		}
 	}
 	AddCheckpoint(4450.f, FVector(4550.f, 0.f, 100.f),
-		TEXT("The ledge is too high to jump. When a falling crate's top is about level with your chest, freeze, jump onto it, then jump up to the ledge."), 5500.f);
+		TEXT("The ledge is too high to jump. Freeze the stepping stones when they line up like stairs, then hop up them to the ledge."), 5500.f);
 
 	// --- 4. Gold ignores your freeze ------------------------------------------
 	SideWalls(6000.f, 7600.f, 350.f, 500.f, H);
