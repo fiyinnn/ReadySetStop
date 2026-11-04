@@ -58,7 +58,7 @@ public:
 	// --- Tuning (changed between playtests) ---
 	float StartTime = 360.f;	// seconds on the clock at the start
 	float FreezeCost = 5.f;		// seconds taken off the clock per freeze
-	float FreezeDuration = 3.f;	// how long a freeze lasts
+	float FreezeDuration = 4.f;	// how long a freeze lasts
 	float FreezeCooldown = 1.f;	// wait after a freeze ends
 	float HitPenalty = 10.f;	// seconds lost when hit, caught or falling
 

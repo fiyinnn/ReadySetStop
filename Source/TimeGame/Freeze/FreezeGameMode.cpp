@@ -219,26 +219,26 @@ void AFreezeGameMode::BuildCourse()
 	AddCheckpoint(-1000.f, FVector(150.f, 0.f, 100.f),
 		TEXT("Reach the clock tower before your time runs out. Move with WASD, look with the mouse, jump with Space."), 800.f);
 
-	// --- 1. Learn to freeze: one fast blade ---------------------------------
-	Floor(800.f, 2400.f, -350.f, 350.f);
-	SideWalls(800.f, 2400.f, 350.f, 450.f);
-	Blade(1600.f, 0.f, 1.3f, 0.f, false);
-	SpawnHourglass(FVector(2250.f, 250.f, 80.f));
-	AddCheckpoint(850.f, FVector(950.f, 0.f, 100.f),
-		TEXT("Press E to freeze time for 3 seconds. Frozen things can't hurt you, but every freeze costs 5 seconds of your clock."), 2400.f);
-
-	// --- 2. Frozen things stay put: the sliding bridge -----------------------
+	// --- 1. Learn to freeze: the sliding bridge (nothing here can hurt you) ---
+	Floor(800.f, 1200.f, -350.f, 350.f);
 	Floor(2400.f, 2800.f, -350.f, 350.f);
-	Floor(4000.f, 4400.f, -350.f, 350.f);
-	if (ATimeMover* B = Bridge(3400.f, 0.f, 700.f, 7.f, 0.f))
+	if (ATimeMover* B = Bridge(1800.f, 0.f, 600.f, 8.f, 0.f))
 	{
 		if (AHourglass* Bonus = SpawnHourglass(B->GetActorLocation() - CourseOrigin + FVector(250.f, 0.f, 100.f)))
 		{
 			Bonus->AttachToActor(B, FAttachmentTransformRules::KeepWorldTransform);
 		}
 	}
-	AddCheckpoint(2450.f, FVector(2550.f, 0.f, 100.f),
-		TEXT("Frozen things stay where they are. Freeze the bridge when it lines up with the path, then run across."), 4400.f);
+	AddCheckpoint(850.f, FVector(950.f, 0.f, 100.f),
+		TEXT("Press E to freeze time. Frozen things stay where they are. Freeze the bridge when it lines up with the path, then run across. Each freeze costs 5 seconds."), 2800.f);
+
+	// --- 2. Frozen things can't hurt you: one blade -------------------------
+	Floor(2800.f, 4400.f, -350.f, 350.f);
+	SideWalls(2800.f, 4400.f, 350.f, 450.f);
+	Blade(3600.f, 0.f, 2.4f, 0.f, false);
+	SpawnHourglass(FVector(4250.f, 250.f, 80.f));
+	AddCheckpoint(2850.f, FVector(2950.f, 0.f, 100.f),
+		TEXT("Frozen things can't hurt you. Freeze the blade, then walk around it. Press E again to unfreeze early."), 4400.f);
 
 	// --- 3. Freeze a falling crate to use it as a step ----------------------
 	Floor(4400.f, 5000.f, -350.f, 350.f);
@@ -248,22 +248,22 @@ void AFreezeGameMode::BuildCourse()
 		MakeMover(FVector(5200.f, 0.f, 0.f), [&](ATimeMover& M)
 		{
 			M.Mode = ETimeMoveMode::Loop;
-			M.Size = FVector(200.f);
+			M.Size = FVector(300.f, 360.f, 300.f);
 			M.OffsetA = FVector(0.f, 0.f, 1100.f);
 			M.OffsetB = FVector(0.f, 0.f, -1100.f);
-			M.Period = 8.8f;
+			M.Period = 14.f;
 			M.Phase = CratePhase;
 			M.Color = FreezeColors::Crate;
 		});
 	}
 	AddCheckpoint(4450.f, FVector(4550.f, 0.f, 100.f),
-		TEXT("The ledge is too high to jump. Freeze a falling crate in mid-air and use it as a step."), 5500.f);
+		TEXT("The ledge is too high to jump. When a falling crate's top is about level with your chest, freeze, jump onto it, then jump up to the ledge."), 5500.f);
 
 	// --- 4. Gold ignores your freeze ------------------------------------------
 	SideWalls(6000.f, 7600.f, 350.f, 500.f, H);
-	Blade(6500.f, H, 2.6f, 0.f, true);
-	Blade(7000.f, H, 1.2f, 0.f, false);
-	Blade(7250.f, H, 2.2f, 0.25f, true);
+	Blade(6500.f, H, 3.0f, 0.f, true);
+	Blade(7000.f, H, 1.8f, 0.f, false);
+	Blade(7250.f, H, 2.8f, 0.25f, true);
 	AddCheckpoint(6050.f, FVector(6150.f, 0.f, H + 100.f),
 		TEXT("Gold things are outside of time. Your freeze won't stop them, so time your run instead."), 7600.f);
 
@@ -296,14 +296,14 @@ void AFreezeGameMode::BuildCourse()
 			M.Size = FVector(200.f, 350.f, 400.f);
 			M.OffsetA = FVector::ZeroVector;
 			M.OffsetB = FVector(0.f, -350.f * Side, 0.f);
-			M.Period = 2.4f;
+			M.Period = 3.2f;
 			M.Color = FreezeColors::Danger;
 			M.HitMessage = TEXT("Crushed!");
 		});
 	}
 	SpawnSentinel(FVector(10300.f, 0.f, H + 100.f), FVector2D(10120.f, -340.f), FVector2D(10390.f, 340.f), 400.f, 1000.f, false);
-	Bridge(11000.f, H, 800.f, 6.5f, 0.3f);
-	Blade(11000.f, H, 2.2f, 0.f, true);
+	Bridge(11000.f, H, 700.f, 8.f, 0.3f);
+	Blade(11000.f, H, 2.8f, 0.f, true);
 	Floor(11600.f, 12000.f, -350.f, 350.f, H);
 	SpawnHourglass(FVector(11850.f, 0.f, H + 80.f));
 	AddCheckpoint(9650.f, FVector(9700.f, 0.f, H + 100.f), FString(), 0.f);
@@ -347,7 +347,7 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 
 	if (UCharacterMovementComponent* Move = Player->GetCharacterMovement())
 	{
-		Move->JumpZVelocity = 650.f;
+		Move->JumpZVelocity = 700.f;
 		Move->AirControl = 0.6f;
 		Move->MaxWalkSpeed = 550.f;
 	}
