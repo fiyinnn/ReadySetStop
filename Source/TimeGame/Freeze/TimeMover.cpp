@@ -3,6 +3,7 @@
 #include "Sentinel.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -34,6 +35,15 @@ ATimeMover::ATimeMover()
 	KillBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	KillBox->SetCollisionResponseToAllChannels(ECR_Overlap);
 	KillBox->SetGenerateOverlapEvents(false);
+
+	// Gold (timeless) things glow so they stand out from things your freeze can stop
+	GoldGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("GoldGlow"));
+	GoldGlow->SetupAttachment(Body);
+	GoldGlow->SetIntensity(8000.f);
+	GoldGlow->SetAttenuationRadius(500.f);
+	GoldGlow->SetLightColor(FLinearColor(1.f, 0.7f, 0.15f));
+	GoldGlow->SetCastShadows(false);
+	GoldGlow->SetVisibility(false);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylFinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
@@ -70,6 +80,8 @@ void ATimeMover::BeginPlay()
 		ArmMat->SetVectorParameterValue(TEXT("Color"), bTimeless ? FreezeColors::Gold : FreezeColors::Metal);
 		Arm->SetMaterial(0, ArmMat);
 	}
+
+	GoldGlow->SetVisibility(bTimeless);
 
 	if (Mode == ETimeMoveMode::Swing)
 	{

@@ -8,6 +8,7 @@ class UStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInterface;
 class UBoxComponent;
+class UPointLightComponent;
 
 UENUM()
 enum class ETimeMoveMode : uint8
@@ -63,6 +64,7 @@ protected:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Body;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Arm;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> KillBox;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UPointLightComponent> GoldGlow;
 
 	UPROPERTY() TObjectPtr<UStaticMesh> CubeMesh;
 	UPROPERTY() TObjectPtr<UStaticMesh> CylinderMesh;

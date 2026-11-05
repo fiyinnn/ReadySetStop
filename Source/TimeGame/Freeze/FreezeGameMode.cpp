@@ -420,6 +420,23 @@ void AFreezeGameMode::OnFreezePressed()
 	TimeLeft -= FreezeCost;
 	FreezeLeft = FreezeDuration;
 	SetFrozen(true);
+
+	// Remind the player (the first few times) when gold things nearby keep moving
+	if (GoldReminders < 3)
+	{
+		if (ACharacter* Player = GetPlayerCharacter())
+		{
+			for (TActorIterator<ATimeMover> It(GetWorld()); It; ++It)
+			{
+				if (It->bTimeless && FVector::Dist2D(It->GetActorLocation(), Player->GetActorLocation()) < 1500.f)
+				{
+					AddMessage(TEXT("Gold things ignore your freeze!"), FreezeColors::Gold);
+					GoldReminders++;
+					break;
+				}
+			}
+		}
+	}
 	if (TimeLeft <= 0.f)
 	{
 		TimeLeft = 0.f;

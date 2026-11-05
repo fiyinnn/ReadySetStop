@@ -116,6 +116,7 @@ protected:
 	int32 CurrentCheckpoint = -1;
 	float HintEndX = 0.f;
 	float InvulnerableLeft = 0.f;
+	int32 GoldReminders = 0;
 
 	bool bPlayerReady = false;
 
