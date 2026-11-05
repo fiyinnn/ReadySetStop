@@ -507,6 +507,10 @@ void AFreezeGameMode::BuildCourse()
 void AFreezeGameMode::InitPlayer(ACharacter* Player)
 {
 	bPlayerReady = true;
+	if (APlayerController* StartPC = Cast<APlayerController>(Player->GetController()))
+	{
+		StartPC->SetIgnoreMoveInput(true);	// wait on the title screen until Enter
+	}
 
 	if (UCharacterMovementComponent* Move = Player->GetCharacterMovement())
 	{
@@ -588,7 +592,7 @@ void AFreezeGameMode::OnFreezePressed()
 			{
 				if (It->bTimeless && FVector::Dist2D(It->GetActorLocation(), Player->GetActorLocation()) < 1500.f)
 				{
-					AddMessage(TEXT("Gold things ignore your freeze!"), FreezeColors::Gold);
+					AddWarning(TEXT("Gold things ignore your freeze!"));
 					GoldReminders++;
 					break;
 				}
@@ -610,6 +614,18 @@ void AFreezeGameMode::OnCloseHint()
 void AFreezeGameMode::OnRestartPressed()
 {
 	if (IsPlaying()) return;
+	if (State == EFreezeState::Title)
+	{
+		State = EFreezeState::Playing;
+		if (ACharacter* Player = GetPlayerCharacter())
+		{
+			if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
+			{
+				PC->SetIgnoreMoveInput(false);
+			}
+		}
+		return;
+	}
 	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this, true)));
 }
 
@@ -628,13 +644,25 @@ void AFreezeGameMode::AddMessage(const FString& Text, const FLinearColor& Color)
 	if (Messages.Num() > 4) Messages.RemoveAt(0);
 }
 
-void AFreezeGameMode::PlayerHit(const FString& Reason)
+void AFreezeGameMode::AddWarning(const FString& Text)
+{
+	FFreezeMessage M;
+	M.Text = Text;
+	M.Color = FLinearColor(1.f, 0.15f, 0.1f);
+	M.Life = 4.f;
+	M.bWarning = true;
+	Messages.Add(M);
+	if (Messages.Num() > 4) Messages.RemoveAt(0);
+}
+
+void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
 {
 	if (!IsPlaying() || InvulnerableLeft > 0.f) return;
 
 	Hits++;
 	TimeLeft = FMath::Max(0.f, TimeLeft - HitPenalty);
 	AddMessage(FString::Printf(TEXT("%s  -%ds"), *Reason, FMath::RoundToInt(HitPenalty)), FLinearColor(1.f, 0.35f, 0.3f));
+	if (bByGold) AddWarning(TEXT("Gold things ignore your freeze! Time your run instead."));
 	RespawnPlayer();
 
 	if (TimeLeft <= 0.f) Lose();

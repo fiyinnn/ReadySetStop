@@ -175,7 +175,7 @@ void ATimeMover::Tick(float DeltaSeconds)
 		const FCollisionShape Shape = FCollisionShape::MakeCapsule(Cap->GetScaledCapsuleRadius(), Cap->GetScaledCapsuleHalfHeight());
 		if (KillBox->OverlapComponent(Cap->GetComponentLocation(), Cap->GetComponentQuat(), Shape))
 		{
-			GM->PlayerHit(HitMessage);
+			GM->PlayerHit(HitMessage, bTimeless);
 		}
 	}
 

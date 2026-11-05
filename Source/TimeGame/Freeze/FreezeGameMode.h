@@ -24,7 +24,7 @@ namespace FreezeColors
 }
 
 UENUM()
-enum class EFreezeState : uint8 { Playing, Won, Lost };
+enum class EFreezeState : uint8 { Title, Playing, Won, Lost };
 
 struct FCourseCheckpoint
 {
@@ -39,6 +39,7 @@ struct FFreezeMessage
 	FString Text;
 	FLinearColor Color = FLinearColor::White;
 	float Life = 3.f;
+	bool bWarning = false;	// big and red
 };
 
 /**
@@ -65,7 +66,7 @@ public:
 
 	// --- Called by course actors ---
 	void RegisterFreezable(AActor* Actor);
-	void PlayerHit(const FString& Reason);
+	void PlayerHit(const FString& Reason, bool bByGold = false);
 	void AddTime(float Seconds);
 	void OnSentinelDefeated(ASentinel* Sentinel);
 
@@ -74,7 +75,7 @@ public:
 	ACharacter* GetPlayerCharacter() const;
 
 	// --- Read by the HUD ---
-	EFreezeState State = EFreezeState::Playing;
+	EFreezeState State = EFreezeState::Title;
 	float TimeLeft = 0.f;
 	bool bFrozen = false;
 	float FreezeLeft = 0.f;
@@ -88,6 +89,7 @@ public:
 	float PlaySeconds = 0.f;
 
 	void AddMessage(const FString& Text, const FLinearColor& Color = FLinearColor::White);
+	void AddWarning(const FString& Text);
 
 protected:
 	void BuildCourse();
