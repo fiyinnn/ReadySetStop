@@ -1,3 +1,3 @@
-# TimeGame (Tentative Title)
+# ReadySetStop
 
-Project 3. Theme: Time. 
+Project 3. Theme: Time.
