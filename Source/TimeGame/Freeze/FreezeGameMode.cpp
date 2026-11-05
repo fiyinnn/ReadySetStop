@@ -635,6 +635,11 @@ void AFreezeGameMode::SetFrozen(bool bNewFrozen)
 	{
 		FreezeLook->BlendWeight = bFrozen ? 1.f : 0.f;
 	}
+	if (Music)
+	{
+		Music->SetPaused(bFrozen);	// silence while frozen, back to the music after
+	}
+	LastTickSecond = -1;
 }
 
 void AFreezeGameMode::OnFreezePressed()
@@ -1012,8 +1017,18 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
-	if (Music && !Music->IsPlaying()) Music->Play();
-	if (TimeLeft < 30.f && !bFrozen)
+	if (Music && !bFrozen && !Music->IsPlaying()) Music->Play();
+	if (bFrozen)
+	{
+		// While time is frozen, the music stops and a clock ticks once a second
+		const int32 Tick = FMath::FloorToInt(FreezeLeft);
+		if (Tick != LastTickSecond)
+		{
+			LastTickSecond = Tick;
+			PlaySfx(TEXT("SFX_Tick"), 0.8f);
+		}
+	}
+	else if (TimeLeft < 30.f)
 	{
 		const int32 Second = FMath::FloorToInt(TimeLeft);
 		if (Second != LastTickSecond)
