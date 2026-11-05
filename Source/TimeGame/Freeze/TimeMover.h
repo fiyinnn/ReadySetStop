@@ -75,4 +75,5 @@ protected:
 	FVector Origin;
 	FRotator BaseRotation;
 	float Time = 0.f;
+	bool bWasDangerous = false;
 };

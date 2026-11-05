@@ -167,7 +167,20 @@ void ATimeMover::Tick(float DeltaSeconds)
 	if (!GM) return;
 
 	const bool bFrozenNow = !bTimeless && GM->IsFrozen();
-	if (bFrozenNow || !IsDangerousNow()) return;
+	const bool bDangerous = IsDangerousNow();
+
+	// The gold press booms when it lands
+	if (bCrushesSentinels && bWasDangerous && !bDangerous)
+	{
+		ACharacter* Listener = GM->GetPlayerCharacter();
+		if (Listener && FVector::Dist(Listener->GetActorLocation(), GetActorLocation()) < 3000.f)
+		{
+			GM->PlaySfx(TEXT("SFX_Slam"), 0.8f);
+		}
+	}
+	bWasDangerous = bDangerous;
+
+	if (bFrozenNow || !bDangerous) return;
 
 	if (ACharacter* Player = GM->GetPlayerCharacter())
 	{

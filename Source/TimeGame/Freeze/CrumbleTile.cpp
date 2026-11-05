@@ -69,7 +69,12 @@ void ACrumbleTile::Tick(float DeltaSeconds)
 		return;
 	}
 
+	const bool bWasShaking = Timer < Delay;
 	Timer += DeltaSeconds;
+	if (bWasShaking && Timer >= Delay)
+	{
+		GM->PlaySfx(TEXT("SFX_Crumble"), 0.5f);
+	}
 	if (Timer < Delay)
 	{
 		// Shake as a warning

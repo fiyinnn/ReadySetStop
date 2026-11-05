@@ -91,6 +91,9 @@ public:
 	void AddMessage(const FString& Text, const FLinearColor& Color = FLinearColor::White);
 	void AddWarning(const FString& Text);
 
+	/** Plays /Game/Audio/<Name> if that sound has been imported; silently does nothing otherwise. */
+	void PlaySfx(const TCHAR* Name, float Volume = 1.f);
+
 protected:
 	void BuildCourse();
 	void EnsureLighting();
@@ -137,5 +140,8 @@ protected:
 	UPROPERTY() TObjectPtr<APostProcessVolume> FreezeLook;
 	UPROPERTY() TObjectPtr<AGeoBlock> Gate;
 	UPROPERTY() TObjectPtr<AGeoBlock> BowPickup;
+	UPROPERTY() TMap<FName, TObjectPtr<class USoundBase>> SoundCache;
+	UPROPERTY() TObjectPtr<class UAudioComponent> Music;
+	int32 LastTickSecond = -1;
 	UPROPERTY() TArray<TObjectPtr<AGeoBlock>> Gates;	// 0 = archery range, 1 = archery arena
 };

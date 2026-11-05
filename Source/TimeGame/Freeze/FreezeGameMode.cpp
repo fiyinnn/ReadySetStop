@@ -2,10 +2,14 @@
 #include "FreezeHUD.h"
 #include "GeoBlock.h"
 #include "CrumbleTile.h"
+#include "FlyingArrow.h"
 #include "Hourglass.h"
+#include "RisingSand.h"
 #include "Sentinel.h"
 #include "TimeMover.h"
+#include "Components/AudioComponent.h"
 #include "Components/InputComponent.h"
+#include "Sound/SoundBase.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -306,9 +310,66 @@ void AFreezeGameMode::BuildCourse()
 			TEXT("Gold things are outside of time. Your freeze won't stop them, so time your run instead."), X0 + 1600.f);
 	}
 
-	// --- 6. The Sentinel ------------------------------------------------------
+	// --- 6. Rising sand: gold you can't freeze, climb out --------------------
 	{
 		const float X0 = 9000.f;
+		const FLinearColor Wood(0.42f, 0.27f, 0.14f);
+		Floor(X0, X0 + 1600.f, -500.f, 500.f, H);
+		SideWalls(X0, X0 + 1600.f, 500.f, 1700.f, H);
+		Block(FVector(X0, 425.f, H + 850.f), FVector(40.f, 150.f, 1700.f), FreezeColors::Wall);
+		Block(FVector(X0, -425.f, H + 850.f), FVector(40.f, 150.f, 1700.f), FreezeColors::Wall);
+		Block(FVector(X0, 0.f, H + 1100.f), FVector(40.f, 700.f, 1200.f), FreezeColors::Wall);
+		Block(FVector(X0 + 1600.f, 0.f, H + 700.f), FVector(40.f, 1000.f, 1400.f), FreezeColors::Wall);
+		Block(FVector(X0 + 1700.f, 0.f, H + 1380.f), FVector(300.f, 500.f, 40.f), FreezeColors::Stone);	// exit balcony
+
+		auto Ledge = [&](float X, float Y, float Top, float SX, float SY)
+		{
+			Block(FVector(X, Y, H + Top - 20.f), FVector(SX, SY, 40.f), Wood);
+		};
+		auto Lift = [&](float X, float Y, float Top, float SX, float SY, const FVector& Travel, float Period, float Phase)
+		{
+			MakeMover(FVector(X, Y, H + Top - 20.f), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::PingPong;
+				M.Size = FVector(SX, SY, 40.f);
+				M.OffsetA = FVector::ZeroVector;
+				M.OffsetB = Travel;
+				M.Period = Period;
+				M.Phase = Phase;
+				M.Color = FreezeColors::Platform;
+			});
+		};
+		// Up the south side, back along the north side, then a long ride to the exit
+		Ledge(X0 + 400.f, -250.f, 200.f, 200.f, 200.f);
+		Lift(X0 + 700.f, -250.f, 200.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 4.f, 0.f);
+		Ledge(X0 + 1000.f, -250.f, 500.f, 200.f, 200.f);
+		Lift(X0 + 1150.f, -250.f, 700.f, 200.f, 160.f, FVector(300.f, 0.f, 0.f), 4.f, 0.25f);
+		Ledge(X0 + 1450.f, 250.f, 850.f, 200.f, 400.f);
+		Lift(X0 + 1150.f, 250.f, 850.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 4.f, 0.5f);
+		Ledge(X0 + 850.f, 250.f, 1150.f, 200.f, 200.f);
+		Lift(X0 + 600.f, 250.f, 1300.f, 200.f, 200.f, FVector(-300.f, 0.f, 0.f), 4.f, 0.f);
+		Ledge(X0 + 150.f, 0.f, 1350.f, 200.f, 600.f);
+		Lift(X0 + 400.f, -250.f, 1400.f, 300.f, 200.f, FVector(900.f, 0.f, 0.f), 7.f, 0.f);
+		Ledge(X0 + 1500.f, -150.f, 1400.f, 200.f, 500.f);
+
+		const FTransform T(W(FVector(X0 + 800.f, 0.f, H - 300.f)));
+		if (ARisingSand* Sand = GetWorld()->SpawnActorDeferred<ARisingSand>(ARisingSand::StaticClass(), T))
+		{
+			Sand->AreaMin = FVector2D(CourseOrigin.X + X0 + 20.f, CourseOrigin.Y - 480.f);
+			Sand->AreaMax = FVector2D(CourseOrigin.X + X0 + 1580.f, CourseOrigin.Y + 480.f);
+			Sand->StartZ = CourseOrigin.Z + H - 300.f;
+			Sand->MaxZ = CourseOrigin.Z + H + 1500.f;
+			Sand->Speed = 25.f;
+			Sand->TriggerX = CourseOrigin.X + X0 + 150.f;
+			Sand->FinishSpawning(T);
+		}
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 80.f, 0.f, H + 100.f),
+			TEXT("Gold sand starts rising when you walk in, and your freeze can't stop it. Climb to the exit at the top. Freezing still holds the blue platforms still."), X0 + 1600.f);
+	}
+
+	// --- 7. The Sentinel ------------------------------------------------------
+	{
+		const float X0 = 10600.f;
 		Floor(X0, X0 + 2000.f, -700.f, 700.f, H);
 		SideWalls(X0, X0 + 2000.f, 700.f, 500.f, H);
 		for (float EndX : { X0, X0 + 2000.f })
@@ -327,7 +388,7 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- 7. Archery range: learn to shoot ------------------------------------
 	{
-		const float X0 = 11000.f;
+		const float X0 = 12600.f;
 		Floor(X0, X0 + 1400.f, -700.f, 700.f, H);
 		SideWalls(X0, X0 + 1400.f, 700.f, 500.f, H);
 		Block(FVector(X0, 525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
@@ -360,7 +421,7 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- 8. Archery arena: three Sentinels -----------------------------------
 	{
-		const float X0 = 12400.f;
+		const float X0 = 14000.f;
 		Floor(X0, X0 + 1800.f, -800.f, 800.f, H);
 		SideWalls(X0, X0 + 1800.f, 800.f, 500.f, H);
 		Block(FVector(X0 + 600.f, 400.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
@@ -379,7 +440,7 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- 9. Everything together: crushers, crumbling floor, bridge -----------
 	{
-		const float X0 = 14200.f;
+		const float X0 = 15800.f;
 		Floor(X0, X0 + 800.f, -350.f, 350.f, H);
 		SideWalls(X0, X0 + 280.f, 350.f, 500.f, H);
 		SideWalls(X0 + 520.f, X0 + 800.f, 350.f, 500.f, H);
@@ -418,7 +479,7 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- 10. Final room: crush the boss with the gold press ------------------
 	{
-		const float X0 = 17800.f;
+		const float X0 = 19400.f;
 		Floor(X0, X0 + 2000.f, -900.f, 900.f, H);
 		SideWalls(X0, X0 + 2000.f, 900.f, 600.f, H);
 		Block(FVector(X0, 625.f, H + 300.f), FVector(40.f, 550.f, 600.f), FreezeColors::Wall);
@@ -442,14 +503,14 @@ void AFreezeGameMode::BuildCourse()
 	}
 
 	// --- Goal: the clock tower ------------------------------------------------
-	Floor(19800.f, 20800.f, -500.f, 500.f, H);
+	Floor(21400.f, 22400.f, -500.f, 500.f, H);
 	{
 		const FLinearColor TowerStone(0.55f, 0.47f, 0.38f);
 		const FLinearColor Roof(0.45f, 0.12f, 0.12f);
 		const FLinearColor Wood(0.35f, 0.2f, 0.1f);
 		const FLinearColor Cream(0.92f, 0.88f, 0.78f);
 		const FLinearColor Dark(0.08f, 0.08f, 0.1f);
-		const float TX = 20500.f;		// tower centre
+		const float TX = 22100.f;		// tower centre
 		const float Front = TX - 300.f;	// face of the tower the player walks up to
 
 		// Body of the tower with a plinth and a ledge under the belfry
@@ -491,12 +552,37 @@ void AFreezeGameMode::BuildCourse()
 		}
 		Block(FVector(Front - 36.f, 0.f, H + 1250.f), FVector(30.f), Dark, EGeoShape::Sphere);
 
-		// Wooden door, and the bell rope hanging down the front: ring it to finish
+		// Wooden door
 		Block(FVector(Front - 10.f, 0.f, H + 260.f), FVector(20.f, 220.f, 280.f), Wood);
-		Block(FVector(Front - 40.f, 200.f, H + 1500.f), FVector(80.f, 40.f, 30.f), Wood);
-		Block(FVector(Front - 70.f, 200.f, H + 800.f), FVector(10.f, 10.f, 1400.f), FLinearColor(0.75f, 0.65f, 0.4f), EGeoShape::Cylinder);
-		Block(FVector(Front - 70.f, 200.f, H + 100.f), FVector(40.f), FreezeColors::Danger, EGeoShape::Sphere);
-		BellRope = FVector(Front - 70.f, 200.f, H + 100.f);
+
+		// Climb the tower's side on ledges and moving platforms to reach the bell
+		auto Ledge = [&](float DX, float Y, float Top)
+		{
+			Block(FVector(TX + DX, Y, H + Top - 20.f), FVector(200.f, 160.f, 40.f), Wood);
+		};
+		auto Lift = [&](float DX, float Y, float Top, const FVector& Travel, float Period)
+		{
+			MakeMover(FVector(TX + DX, Y, H + Top - 20.f), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::PingPong;
+				M.Size = FVector(200.f, 160.f, 40.f);
+				M.OffsetA = FVector::ZeroVector;
+				M.OffsetB = Travel;
+				M.Period = Period;
+				M.Color = FreezeColors::Platform;
+			});
+		};
+		Ledge(-230.f, -400.f, 200.f);
+		Lift(0.f, -400.f, 200.f, FVector(0.f, 0.f, 350.f), 4.f);
+		Ledge(230.f, -400.f, 550.f);
+		Lift(230.f, -620.f, 750.f, FVector(-460.f, 0.f, 0.f), 5.f);
+		Ledge(-230.f, -400.f, 950.f);
+		Lift(0.f, -620.f, 1000.f, FVector(0.f, 0.f, 350.f), 4.f);
+		Ledge(100.f, -400.f, 1450.f);
+		AddCheckpoint(21450.f, FVector(21500.f, 0.f, H + 100.f),
+			TEXT("Climb the tower's side and ring the bell at the top. Freeze the blue platforms to make the jumps easier."), 0.f);
+
+		BellRope = FVector(TX, 0.f, H + 1890.f);	// the bell in the belfry
 	}
 }
 
@@ -570,15 +656,18 @@ void AFreezeGameMode::OnFreezePressed()
 	if (bFrozen)
 	{
 		SetFrozen(false);
+		PlaySfx(TEXT("SFX_Unfreeze"));
 		CooldownLeft = FreezeCooldown;
 		return;
 	}
 	if (CooldownLeft > 0.f)
 	{
 		AddMessage(TEXT("Freeze is recharging..."), FLinearColor(0.7f, 0.7f, 0.7f));
+		PlaySfx(TEXT("SFX_Denied"), 0.6f);
 		return;
 	}
 	Freezes++;
+	PlaySfx(TEXT("SFX_Freeze"));
 	TimeLeft -= FreezeCost;
 	FreezeLeft = FreezeDuration;
 	SetFrozen(true);
@@ -617,6 +706,11 @@ void AFreezeGameMode::OnRestartPressed()
 	if (State == EFreezeState::Title)
 	{
 		State = EFreezeState::Playing;
+		PlaySfx(TEXT("SFX_Start"));
+		if (USoundBase* Track = LoadObject<USoundBase>(nullptr, TEXT("/Game/Audio/MUS_Background.MUS_Background"), nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			Music = UGameplayStatics::SpawnSound2D(this, Track, 0.35f);
+		}
 		if (ACharacter* Player = GetPlayerCharacter())
 		{
 			if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
@@ -632,6 +726,7 @@ void AFreezeGameMode::OnRestartPressed()
 void AFreezeGameMode::AddTime(float Seconds)
 {
 	TimeLeft += Seconds;
+	PlaySfx(TEXT("SFX_Hourglass"));
 	AddMessage(FString::Printf(TEXT("+%d seconds"), FMath::RoundToInt(Seconds)), FreezeColors::Ice);
 }
 
@@ -655,6 +750,27 @@ void AFreezeGameMode::AddWarning(const FString& Text)
 	if (Messages.Num() > 4) Messages.RemoveAt(0);
 }
 
+void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
+{
+	const FName Key(Name);
+	TObjectPtr<USoundBase>* Cached = SoundCache.Find(Key);
+	USoundBase* Sound = nullptr;
+	if (Cached)
+	{
+		Sound = *Cached;
+	}
+	else
+	{
+		const FString Path = FString::Printf(TEXT("/Game/Audio/%s.%s"), Name, Name);
+		Sound = LoadObject<USoundBase>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet);
+		SoundCache.Add(Key, Sound);
+	}
+	if (Sound)
+	{
+		UGameplayStatics::PlaySound2D(this, Sound, Volume);
+	}
+}
+
 void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
 {
 	if (!IsPlaying() || InvulnerableLeft > 0.f) return;
@@ -662,6 +778,7 @@ void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
 	Hits++;
 	TimeLeft = FMath::Max(0.f, TimeLeft - HitPenalty);
 	AddMessage(FString::Printf(TEXT("%s  -%ds"), *Reason, FMath::RoundToInt(HitPenalty)), FLinearColor(1.f, 0.35f, 0.3f));
+	PlaySfx(TEXT("SFX_Hit"));
 	if (bByGold) AddWarning(TEXT("Gold things ignore your freeze! Time your run instead."));
 	RespawnPlayer();
 
@@ -692,17 +809,23 @@ void AFreezeGameMode::RespawnPlayer()
 	{
 		It->ResetTile();
 	}
+	for (TActorIterator<ARisingSand> It(GetWorld()); It; ++It)
+	{
+		It->ResetSand();
+	}
 }
 
 void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 {
 	if (!Sentinel) return;
+	PlaySfx(TEXT("SFX_SentinelDown"));
 
 	if (Sentinel->bBoss)
 	{
 		AddMessage(TEXT("The Sentinel is crushed!"), FreezeColors::Gold);
 		if (Gate)
 		{
+			PlaySfx(TEXT("SFX_GateOpen"));
 			Gate->Destroy();
 			Gate = nullptr;
 			AddMessage(TEXT("The gate is open! Ring the clock tower bell."), FreezeColors::Gold);
@@ -725,6 +848,7 @@ void AFreezeGameMode::OpenGate(int32 Index, const FString& Message)
 {
 	if (Gates.IsValidIndex(Index) && Gates[Index])
 	{
+		PlaySfx(TEXT("SFX_GateOpen"));
 		Gates[Index]->Destroy();
 		Gates[Index] = nullptr;
 		AddMessage(Message, FreezeColors::Gold);
@@ -794,17 +918,20 @@ void AFreezeGameMode::OnShootPressed()
 	FVector HitPoint;
 	AActor* HitActor = FindAimTarget(HitPoint);
 
-	// Arrow streak from the player to where it landed
-	const FVector Muzzle = Player->GetActorLocation() + FVector(0.f, 0.f, 50.f) + Player->GetActorForwardVector() * 40.f;
-	const FVector Path = HitPoint - Muzzle;
-	if (Path.Size() > 10.f)
+	// Turn to face the shot, then send a visible arrow from the bow hand to where it lands
+	if (AController* C = Player->GetController())
 	{
-		AGeoBlock* Streak = GetWorld()->SpawnActor<AGeoBlock>(AGeoBlock::StaticClass(), Muzzle + Path * 0.5f, FRotationMatrix::MakeFromZ(Path.GetSafeNormal()).Rotator());
-		if (Streak)
+		Player->SetActorRotation(FRotator(0.f, C->GetControlRotation().Yaw, 0.f));
+	}
+	const FVector Muzzle = Player->GetMesh() ? Player->GetMesh()->GetSocketLocation(TEXT("hand_l")) : Player->GetActorLocation() + FVector(0.f, 0.f, 50.f);
+	PlaySfx(TEXT("SFX_BowShoot"));
+	if ((HitPoint - Muzzle).Size() > 10.f)
+	{
+		const FTransform T(Muzzle);
+		if (AFlyingArrow* Arrow = GetWorld()->SpawnActorDeferred<AFlyingArrow>(AFlyingArrow::StaticClass(), T))
 		{
-			Streak->SetActorEnableCollision(false);
-			Streak->Init(FVector(9.f, 9.f, Path.Size()), FLinearColor(1.f, 0.85f, 0.2f), EGeoShape::Cylinder);
-			Streak->SetLifeSpan(0.4f);
+			Arrow->Target = HitPoint;
+			Arrow->FinishSpawning(T);
 		}
 	}
 
@@ -814,6 +941,7 @@ void AFreezeGameMode::OnShootPressed()
 		return;
 	}
 
+	PlaySfx(TEXT("SFX_ArrowHit"));
 	if (ASentinel* S = Cast<ASentinel>(HitActor))
 	{
 		if (S->bBoss)
@@ -853,6 +981,7 @@ void AFreezeGameMode::UpdateArrowKeys(ACharacter* Player)
 void AFreezeGameMode::Win()
 {
 	State = EFreezeState::Won;
+	if (Music) Music->FadeOut(2.f, 0.f);
 	SetFrozen(false);
 	HintText.Empty();
 }
@@ -860,6 +989,8 @@ void AFreezeGameMode::Win()
 void AFreezeGameMode::Lose()
 {
 	State = EFreezeState::Lost;
+	PlaySfx(TEXT("SFX_TimeUp"));
+	if (Music) Music->FadeOut(1.f, 0.f);
 	SetFrozen(false);
 	HintText.Empty();
 }
@@ -886,6 +1017,16 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
+	if (Music && !Music->IsPlaying()) Music->Play();
+	if (TimeLeft < 30.f && !bFrozen)
+	{
+		const int32 Second = FMath::FloorToInt(TimeLeft);
+		if (Second != LastTickSecond)
+		{
+			LastTickSecond = Second;
+			PlaySfx(TEXT("SFX_Tick"), 0.5f);
+		}
+	}
 	if (bHasBow)
 	{
 		FVector Ignored;
@@ -897,10 +1038,11 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	if (!bHasBow && FVector::Dist(Player->GetActorLocation(), W(BowSpot)) < 160.f)
 	{
 		bHasBow = true;
+		PlaySfx(TEXT("SFX_BowPickup"));
 		if (BowPickup)
 		{
-			BowPickup->Destroy();
-			BowPickup = nullptr;
+			BowPickup->SetActorEnableCollision(false);
+			BowPickup->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("hand_l"));
 		}
 		AddMessage(TEXT("You got the bow! Press F to shoot."), FreezeColors::Gold);
 	}
@@ -912,6 +1054,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 		if (FreezeLeft <= 0.f)
 		{
 			SetFrozen(false);
+			PlaySfx(TEXT("SFX_Unfreeze"));
 			CooldownLeft = FreezeCooldown;
 		}
 	}
@@ -939,6 +1082,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 			HintText = Checkpoints[i].Hint;
 			HintEndX = Checkpoints[i].HintEndX;
 			AddMessage(TEXT("Checkpoint"), FreezeColors::Ice);
+			PlaySfx(TEXT("SFX_Checkpoint"), 0.6f);
 			break;
 		}
 	}
@@ -954,9 +1098,10 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 		return;
 	}
 
-	if (FVector::Dist2D(Loc, W(BellRope)) < 160.f)
+	if (FVector::Dist(Loc, W(BellRope)) < 280.f)
 	{
 		AddMessage(TEXT("DONG!"), FreezeColors::Gold);
+		PlaySfx(TEXT("SFX_Bell"));
 		Win();
 	}
 }
