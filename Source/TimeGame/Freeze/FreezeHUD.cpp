@@ -105,8 +105,8 @@ void AFreezeHUD::DrawHUD()
 	// --- Crosshair once the player has the bow ---
 	if (GM->bHasBow && GM->IsPlaying())
 	{
-		const float CX = SW * 0.5f, CY = SH * 0.5f, L = 8.f * UI, T = 2.f * UI;
-		const FLinearColor C(1.f, 1.f, 1.f, 0.85f);
+		const float CX = SW * 0.5f, CY = SH * 0.5f, L = (GM->bAimOnTarget ? 12.f : 8.f) * UI, T = 3.f * UI;
+		const FLinearColor C = GM->bAimOnTarget ? FLinearColor(1.f, 0.15f, 0.1f, 1.f) : FLinearColor(1.f, 1.f, 1.f, 0.85f);
 		DrawRect(C, CX - L, CY - T * 0.5f, L * 2.f, T);
 		DrawRect(C, CX - T * 0.5f, CY - L, T, L * 2.f);
 	}

@@ -83,6 +83,7 @@ public:
 	TArray<FFreezeMessage> Messages;
 	int32 Freezes = 0;
 	bool bHasBow = false;
+	bool bAimOnTarget = false;	// crosshair turns red
 	int32 Hits = 0;
 	float PlaySeconds = 0.f;
 
@@ -101,6 +102,7 @@ protected:
 	void OnCloseHint();
 	void OnRestartPressed();
 	void OnShootPressed();
+	AActor* FindAimTarget(FVector& OutHitPoint) const;
 	void UpdateArrowKeys(ACharacter* Player);
 	void OpenGate(int32 Index, const FString& Message);
 

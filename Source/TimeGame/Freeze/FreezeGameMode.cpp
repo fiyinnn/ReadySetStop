@@ -341,13 +341,13 @@ void AFreezeGameMode::BuildCourse()
 		// Two targets darting across the back wall, too fast to hit unless frozen
 		for (int32 i = 0; i < 2; ++i)
 		{
-			MakeMover(FVector(X0 + 1250.f, 0.f, H + 200.f + 200.f * i), [&](ATimeMover& M)
+			MakeMover(FVector(X0 + 1250.f, 0.f, H + 180.f + 260.f * i), [&](ATimeMover& M)
 			{
 				M.Mode = ETimeMoveMode::PingPong;
-				M.Size = FVector(30.f, 140.f, 140.f);
-				M.OffsetA = FVector(0.f, -550.f, 0.f);
-				M.OffsetB = FVector(0.f, 550.f, 0.f);
-				M.Period = 0.9f + 0.3f * i;
+				M.Size = FVector(30.f, 220.f, 220.f);
+				M.OffsetA = FVector(0.f, -500.f, 0.f);
+				M.OffsetB = FVector(0.f, 500.f, 0.f);
+				M.Period = 2.0f + 0.6f * i;
 				M.Phase = 0.37f * i;
 				M.Color = FLinearColor(0.9f, 0.1f, 0.1f);
 				M.bIsTarget = true;
@@ -355,7 +355,7 @@ void AFreezeGameMode::BuildCourse()
 		}
 		Gates.Add(Block(FVector(X0 + 1400.f, 0.f, H + 250.f), FVector(60.f, 1400.f, 500.f), FreezeColors::Danger));
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
-			TEXT("Pick up the bow. Press F to shoot where you're aiming. The targets are too fast to hit, so freeze them first. Hit both to open the gate."), X0 + 1400.f);
+			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Press F to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
 	}
 
 	// --- 8. Archery arena: three Sentinels -----------------------------------
@@ -703,14 +703,18 @@ void AFreezeGameMode::OpenGate(int32 Index, const FString& Message)
 	}
 }
 
-void AFreezeGameMode::OnShootPressed()
+static bool IsShootable(AActor* A)
 {
-	if (!IsPlaying() || !bHasBow || ShotCooldown > 0.f) return;
+	if (ASentinel* S = Cast<ASentinel>(A)) return !S->IsDefeated();
+	if (ATimeMover* M = Cast<ATimeMover>(A)) return M->bIsTarget;
+	return false;
+}
 
+AActor* AFreezeGameMode::FindAimTarget(FVector& OutHitPoint) const
+{
 	ACharacter* Player = GetPlayerCharacter();
 	APlayerController* PC = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
-	if (!PC) return;
-	ShotCooldown = 0.35f;
+	if (!PC) return nullptr;
 
 	FVector ViewLoc;
 	FRotator ViewRot;
@@ -727,7 +731,40 @@ void AFreezeGameMode::OnShootPressed()
 
 	FHitResult Hit;
 	const bool bHit = GetWorld()->LineTraceSingleByObjectType(Hit, Start, End, Objects, Params);
-	const FVector HitPoint = bHit ? Hit.ImpactPoint : End;
+	OutHitPoint = bHit ? Hit.ImpactPoint : End;
+	if (bHit && IsShootable(Hit.GetActor())) return Hit.GetActor();
+
+	// Aim assist: accept anything shootable within a few degrees of the crosshair, if nothing blocks it
+	AActor* Best = nullptr;
+	float BestAngle = 6.f;
+	auto Consider = [&](AActor* A)
+	{
+		if (!IsShootable(A)) return;
+		const FVector To = A->GetActorLocation() - ViewLoc;
+		if (To.Size() > 7000.f) return;
+		const float Angle = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(Dir, To.GetSafeNormal())));
+		if (Angle >= BestAngle) return;
+		FHitResult Block;
+		if (GetWorld()->LineTraceSingleByObjectType(Block, Start, A->GetActorLocation(), Objects, Params) && Block.GetActor() != A) return;
+		Best = A;
+		BestAngle = Angle;
+	};
+	for (TActorIterator<ATimeMover> It(GetWorld()); It; ++It) Consider(*It);
+	for (TActorIterator<ASentinel> It(GetWorld()); It; ++It) Consider(*It);
+	if (Best) OutHitPoint = Best->GetActorLocation();
+	return Best;
+}
+
+void AFreezeGameMode::OnShootPressed()
+{
+	if (!IsPlaying() || !bHasBow || ShotCooldown > 0.f) return;
+
+	ACharacter* Player = GetPlayerCharacter();
+	if (!Player) return;
+	ShotCooldown = 0.35f;
+
+	FVector HitPoint;
+	AActor* HitActor = FindAimTarget(HitPoint);
 
 	// Arrow streak from the player to where it landed
 	const FVector Muzzle = Player->GetActorLocation() + FVector(0.f, 0.f, 50.f) + Player->GetActorForwardVector() * 40.f;
@@ -743,8 +780,7 @@ void AFreezeGameMode::OnShootPressed()
 		}
 	}
 
-	AActor* HitActor = bHit ? Hit.GetActor() : nullptr;
-	if (!Cast<ASentinel>(HitActor) && !(Cast<ATimeMover>(HitActor) && Cast<ATimeMover>(HitActor)->bIsTarget))
+	if (!HitActor)
 	{
 		AddMessage(TEXT("Missed!"), FLinearColor(0.8f, 0.8f, 0.85f));
 		return;
@@ -765,13 +801,10 @@ void AFreezeGameMode::OnShootPressed()
 
 	if (ATimeMover* M = Cast<ATimeMover>(HitActor))
 	{
-		if (M->bIsTarget)
-		{
-			M->Destroy();
-			TargetsHit++;
-			AddMessage(FString::Printf(TEXT("Target hit! %d of 2"), TargetsHit), FreezeColors::Gold);
-			if (TargetsHit >= 2) OpenGate(0, TEXT("Both targets hit. The gate is open!"));
-		}
+		M->Destroy();
+		TargetsHit++;
+		AddMessage(FString::Printf(TEXT("Target hit! %d of 2"), TargetsHit), FreezeColors::Gold);
+		if (TargetsHit >= 2) OpenGate(0, TEXT("Both targets hit. The gate is open!"));
 	}
 }
 
@@ -825,6 +858,11 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
+	if (bHasBow)
+	{
+		FVector Ignored;
+		bAimOnTarget = FindAimTarget(Ignored) != nullptr;
+	}
 	UpdateArrowKeys(Player);
 
 	// Pick up the bow
