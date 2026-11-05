@@ -51,6 +51,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Mover") float SwingAngle = 30.f;
 	UPROPERTY(EditAnywhere, Category = "Mover") bool bTimeless = false;
 	UPROPERTY(EditAnywhere, Category = "Mover") bool bCrushesSentinels = false;
+	UPROPERTY(EditAnywhere, Category = "Mover") bool bIsTarget = false;	// archery target
 	UPROPERTY(EditAnywhere, Category = "Mover") FString HitMessage = TEXT("You got hit.");
 
 	virtual void Tick(float DeltaSeconds) override;

@@ -69,8 +69,12 @@ void ASentinel::BeginPlay()
 	if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		Mat->SetVectorParameterValue(TEXT("Color"), FLinearColor(1.f, 0.05f, 0.03f));
+		Mat->SetVectorParameterValue(TEXT("Color"), bBoss ? FreezeColors::Gold : FLinearColor(1.f, 0.05f, 0.03f));
 		Eye->SetMaterial(0, Mat);
+	}
+	if (bBoss)
+	{
+		Glow->SetLightColor(FreezeColors::Gold);
 	}
 
 	if (AFreezeGameMode* GM = GetWorld()->GetAuthGameMode<AFreezeGameMode>())
@@ -91,6 +95,13 @@ void ASentinel::Tick(float DeltaSeconds)
 
 	AFreezeGameMode* GM = GetWorld()->GetAuthGameMode<AFreezeGameMode>();
 	if (!GM || GM->IsFrozen() || !GM->IsPlaying()) return;
+
+	// Fell off the course
+	if (GetActorLocation().Z < Home.Z - 600.f)
+	{
+		Defeat();
+		return;
+	}
 
 	ACharacter* Player = GM->GetPlayerCharacter();
 	if (!Player) return;

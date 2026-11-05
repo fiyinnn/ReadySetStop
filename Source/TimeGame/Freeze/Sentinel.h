@@ -25,7 +25,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sentinel") FVector2D AreaMax = FVector2D(1000.f);
 	UPROPERTY(EditAnywhere, Category = "Sentinel") float ChaseRadius = 1400.f;
 	UPROPERTY(EditAnywhere, Category = "Sentinel") float Speed = 380.f;
-	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bBoss = false;
+	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bBoss = false;	// gold armour: arrows bounce off
+	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bArena = false;	// one of the three in the archery arena
 
 	virtual void Tick(float DeltaSeconds) override;
 

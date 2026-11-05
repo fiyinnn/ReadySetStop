@@ -57,7 +57,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	// --- Tuning (changed between playtests) ---
-	float StartTime = 360.f;	// seconds on the clock at the start
+	float StartTime = 480.f;	// seconds on the clock at the start
 	float FreezeCost = 5.f;		// seconds taken off the clock per freeze
 	float FreezeDuration = 4.f;	// how long a freeze lasts
 	float FreezeCooldown = 1.f;	// wait after a freeze ends
@@ -82,6 +82,7 @@ public:
 	FString HintText;
 	TArray<FFreezeMessage> Messages;
 	int32 Freezes = 0;
+	bool bHasBow = false;
 	int32 Hits = 0;
 	float PlaySeconds = 0.f;
 
@@ -99,6 +100,9 @@ protected:
 	void OnFreezePressed();
 	void OnCloseHint();
 	void OnRestartPressed();
+	void OnShootPressed();
+	void UpdateArrowKeys(ACharacter* Player);
+	void OpenGate(int32 Index, const FString& Message);
 
 	// Course building helpers (all positions relative to the course origin)
 	AGeoBlock* Block(const FVector& Center, const FVector& Size, const FLinearColor& Color, EGeoShape Shape = EGeoShape::Cube, const FRotator& Rotation = FRotator::ZeroRotator);
@@ -118,10 +122,16 @@ protected:
 	float HintEndX = 0.f;
 	float InvulnerableLeft = 0.f;
 	int32 GoldReminders = 0;
+	int32 TargetsHit = 0;
+	int32 ArenaDefeated = 0;
+	float ShotCooldown = 0.f;
+	FVector BowSpot = FVector::ZeroVector;
 
 	bool bPlayerReady = false;
 
 	UPROPERTY() TArray<TWeakObjectPtr<AActor>> Freezables;
 	UPROPERTY() TObjectPtr<APostProcessVolume> FreezeLook;
 	UPROPERTY() TObjectPtr<AGeoBlock> Gate;
+	UPROPERTY() TObjectPtr<AGeoBlock> BowPickup;
+	UPROPERTY() TArray<TObjectPtr<AGeoBlock>> Gates;	// 0 = archery range, 1 = archery arena
 };

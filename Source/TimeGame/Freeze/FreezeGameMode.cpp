@@ -1,6 +1,7 @@
 #include "FreezeGameMode.h"
 #include "FreezeHUD.h"
 #include "GeoBlock.h"
+#include "CrumbleTile.h"
 #include "Hourglass.h"
 #include "Sentinel.h"
 #include "TimeMover.h"
@@ -179,6 +180,16 @@ void AFreezeGameMode::BuildCourse()
 		return M;
 	};
 
+	auto MakeMoverRot = [&](const FVector& Local, const FRotator& Rot, TFunctionRef<void(ATimeMover&)> Configure) -> ATimeMover*
+	{
+		const FTransform T(Rot, W(Local));
+		ATimeMover* M = World->SpawnActorDeferred<ATimeMover>(ATimeMover::StaticClass(), T);
+		if (!M) return nullptr;
+		Configure(*M);
+		M->FinishSpawning(T);
+		return M;
+	};
+
 	auto Blade = [&](float X, float Top, float Period, float Phase, bool bGold)
 	{
 		MakeMover(FVector(X, 0.f, Top + 650.f), [&](ATimeMover& M)
@@ -242,7 +253,7 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- 3. Freeze the stepping stones into a staircase ----------------------
 	Floor(4400.f, 4800.f, -350.f, 350.f);
-	Block(FVector(6500.f, 0.f, H - 150.f), FVector(2200.f, 700.f, 300.f), FreezeColors::Stone);	// ledge + section 4 floor
+	Block(FVector(5600.f, 0.f, H - 150.f), FVector(400.f, 700.f, 300.f), FreezeColors::Stone);	// ledge
 	{
 		// Three stones bob up and down out of step. Once per cycle their tops line up
 		// at roughly 90 / 180 / 270 cm, a staircase up to the 300 cm ledge.
@@ -265,86 +276,180 @@ void AFreezeGameMode::BuildCourse()
 	AddCheckpoint(4450.f, FVector(4550.f, 0.f, 100.f),
 		TEXT("The ledge is too high to jump. Freeze the stepping stones when they line up like stairs, then hop up them to the ledge."), 5500.f);
 
-	// --- 4. Gold ignores your freeze ------------------------------------------
-	SideWalls(6000.f, 7600.f, 350.f, 500.f, H);
-	Blade(6500.f, H, 3.0f, 0.f, true);
-	Blade(7000.f, H, 1.8f, 0.f, false);
-	Blade(7250.f, H, 2.8f, 0.25f, true);
-	AddCheckpoint(6050.f, FVector(6150.f, 0.f, H + 100.f),
-		TEXT("Gold things are outside of time. Your freeze won't stop them, so time your run instead."), 7600.f);
-
-	// --- 5. The Sentinel ------------------------------------------------------
-	Floor(7600.f, 9600.f, -700.f, 700.f, H);
-	SideWalls(7600.f, 9600.f, 700.f, 500.f, H);
-	for (float EndX : { 7600.f, 9600.f })
+	// --- 4. Ride the pendulum, freeze it at the far end --------------------
 	{
-		Block(FVector(EndX, 525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
-		Block(FVector(EndX, -525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
+		const float X0 = 5400.f;
+		Block(FVector(X0 + 180.f, 0.f, H + 100.f), FVector(160.f, 700.f, 200.f), FreezeColors::Stone);	// step up to the jump-off point
+		MakeMoverRot(FVector(X0 + 1000.f, 0.f, H + 880.f), FRotator(0.f, 90.f, 0.f), [&](ATimeMover& M)
+		{
+			M.Mode = ETimeMoveMode::Swing;
+			M.Size = FVector(300.f, 300.f, 40.f);
+			M.SwingLength = 900.f;
+			M.SwingAngle = 40.f;
+			M.Period = 5.f;
+			M.Color = FreezeColors::Platform;
+		});
+		Block(FVector(X0 + 1870.f, 0.f, H + 100.f), FVector(260.f, 700.f, 200.f), FreezeColors::Stone);	// far ledge
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 60.f, 0.f, H + 100.f),
+			TEXT("Jump onto the swinging platform and ride it. Freeze it at the far end of its swing, then step off."), X0 + 2000.f);
 	}
-	Block(FVector(8300.f, 350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
-	Block(FVector(8300.f, -350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
-	Block(FVector(8950.f, 0.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
-	SpawnSentinel(FVector(8700.f, 0.f, H + 100.f), FVector2D(7650.f, -680.f), FVector2D(9550.f, 680.f), 380.f, 1400.f, false);
-	SpawnHourglass(FVector(9350.f, 550.f, H + 80.f));
-	AddCheckpoint(7650.f, FVector(7700.f, 0.f, H + 100.f),
-		TEXT("A Sentinel guards this hall. If it touches you, you're sent back. Frozen, it's just a statue."), 9600.f);
 
-	// --- 6. Everything together (no tips from here) -----------------------
-	Floor(9600.f, 10400.f, -350.f, 350.f, H);
-	SideWalls(9600.f, 9880.f, 350.f, 500.f, H);
-	SideWalls(10120.f, 10400.f, 350.f, 500.f, H);
-	for (float Side : { 1.f, -1.f })
+	// --- 5. Gold ignores your freeze ------------------------------------------
 	{
-		MakeMover(FVector(10000.f, 525.f * Side, H + 200.f), [&](ATimeMover& M)
+		const float X0 = 7400.f;
+		Floor(X0, X0 + 1600.f, -350.f, 350.f, H);
+		SideWalls(X0, X0 + 1600.f, 350.f, 500.f, H);
+		Blade(X0 + 500.f, H, 3.0f, 0.f, true);
+		Blade(X0 + 1000.f, H, 1.8f, 0.f, false);
+		Blade(X0 + 1250.f, H, 2.8f, 0.25f, true);
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
+			TEXT("Gold things are outside of time. Your freeze won't stop them, so time your run instead."), X0 + 1600.f);
+	}
+
+	// --- 6. The Sentinel ------------------------------------------------------
+	{
+		const float X0 = 9000.f;
+		Floor(X0, X0 + 2000.f, -700.f, 700.f, H);
+		SideWalls(X0, X0 + 2000.f, 700.f, 500.f, H);
+		for (float EndX : { X0, X0 + 2000.f })
+		{
+			Block(FVector(EndX, 525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
+			Block(FVector(EndX, -525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
+		}
+		Block(FVector(X0 + 700.f, 350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
+		Block(FVector(X0 + 700.f, -350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
+		Block(FVector(X0 + 1350.f, 0.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
+		SpawnSentinel(FVector(X0 + 1100.f, 0.f, H + 100.f), FVector2D(X0 + 50.f, -680.f), FVector2D(X0 + 1950.f, 680.f), 380.f, 1400.f, false);
+		SpawnHourglass(FVector(X0 + 1750.f, 550.f, H + 80.f));
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 100.f, 0.f, H + 100.f),
+			TEXT("A Sentinel guards this hall. If it touches you, you're sent back. Frozen, it's just a statue."), X0 + 2000.f);
+	}
+
+	// --- 7. Archery range: learn to shoot ------------------------------------
+	{
+		const float X0 = 11000.f;
+		Floor(X0, X0 + 1400.f, -700.f, 700.f, H);
+		SideWalls(X0, X0 + 1400.f, 700.f, 500.f, H);
+		Block(FVector(X0, 525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
+		Block(FVector(X0, -525.f, H + 250.f), FVector(40.f, 350.f, 500.f), FreezeColors::Wall);
+
+		// The bow, waiting on a little stand
+		Block(FVector(X0 + 250.f, 0.f, H + 40.f), FVector(80.f, 80.f, 80.f), FreezeColors::Stone);
+		BowPickup = Block(FVector(X0 + 250.f, 0.f, H + 130.f), FVector(12.f, 12.f, 110.f), FLinearColor(0.45f, 0.25f, 0.1f), EGeoShape::Cylinder);
+		BowSpot = FVector(X0 + 250.f, 0.f, H + 100.f);
+
+		// Two targets darting across the back wall, too fast to hit unless frozen
+		for (int32 i = 0; i < 2; ++i)
+		{
+			MakeMover(FVector(X0 + 1250.f, 0.f, H + 200.f + 200.f * i), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::PingPong;
+				M.Size = FVector(30.f, 140.f, 140.f);
+				M.OffsetA = FVector(0.f, -550.f, 0.f);
+				M.OffsetB = FVector(0.f, 550.f, 0.f);
+				M.Period = 0.9f + 0.3f * i;
+				M.Phase = 0.37f * i;
+				M.Color = FLinearColor(0.9f, 0.1f, 0.1f);
+				M.bIsTarget = true;
+			});
+		}
+		Gates.Add(Block(FVector(X0 + 1400.f, 0.f, H + 250.f), FVector(60.f, 1400.f, 500.f), FreezeColors::Danger));
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
+			TEXT("Pick up the bow. Press F to shoot where you're aiming. The targets are too fast to hit, so freeze them first. Hit both to open the gate."), X0 + 1400.f);
+	}
+
+	// --- 8. Archery arena: three Sentinels -----------------------------------
+	{
+		const float X0 = 12400.f;
+		Floor(X0, X0 + 1800.f, -800.f, 800.f, H);
+		SideWalls(X0, X0 + 1800.f, 800.f, 500.f, H);
+		Block(FVector(X0 + 600.f, 400.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
+		Block(FVector(X0 + 900.f, -350.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
+		for (float SY : { -500.f, 0.f, 500.f })
+		{
+			if (ASentinel* S = SpawnSentinel(FVector(X0 + 1550.f, SY, H + 100.f), FVector2D(X0 + 50.f, -780.f), FVector2D(X0 + 1750.f, 780.f), 330.f, 2500.f, false))
+			{
+				S->bArena = true;
+			}
+		}
+		Gates.Add(Block(FVector(X0 + 1800.f, 0.f, H + 250.f), FVector(60.f, 1600.f, 500.f), FreezeColors::Danger));
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
+			TEXT("Shoot all three Sentinels to open the gate. Frozen Sentinels make easy targets."), X0 + 1800.f);
+	}
+
+	// --- 9. Everything together: crushers, crumbling floor, bridge -----------
+	{
+		const float X0 = 14200.f;
+		Floor(X0, X0 + 800.f, -350.f, 350.f, H);
+		SideWalls(X0, X0 + 280.f, 350.f, 500.f, H);
+		SideWalls(X0 + 520.f, X0 + 800.f, 350.f, 500.f, H);
+		for (float Side : { 1.f, -1.f })
+		{
+			MakeMover(FVector(X0 + 400.f, 525.f * Side, H + 200.f), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::PingPong;
+				M.Deadly = ETimeDeadly::MovingToB;
+				M.Size = FVector(200.f, 350.f, 400.f);
+				M.OffsetA = FVector::ZeroVector;
+				M.OffsetB = FVector(0.f, -350.f * Side, 0.f);
+				M.Period = 3.2f;
+				M.Color = FreezeColors::Danger;
+				M.HitMessage = TEXT("Crushed!");
+			});
+		}
+		SpawnSentinel(FVector(X0 + 750.f, 0.f, H + 100.f), FVector2D(X0 + 520.f, -340.f), FVector2D(X0 + 2000.f, 340.f), 360.f, 1200.f, false);
+
+		// Crumbling floor: each tile drops shortly after you step on it
+		for (float TX = X0 + 900.f; TX < X0 + 2000.f; TX += 200.f)
+		{
+			for (float TY : { -200.f, 0.f, 200.f })
+			{
+				GetWorld()->SpawnActor<ACrumbleTile>(ACrumbleTile::StaticClass(), W(FVector(TX, TY, H - 25.f)), FRotator::ZeroRotator);
+			}
+		}
+		Blade(X0 + 1500.f, H, 2.8f, 0.f, true);
+
+		Bridge(X0 + 2600.f, H, 700.f, 8.f, 0.3f);
+		Floor(X0 + 3200.f, X0 + 3600.f, -350.f, 350.f, H);
+		SpawnHourglass(FVector(X0 + 3450.f, 0.f, H + 80.f));
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 100.f, 0.f, H + 100.f),
+			TEXT("The next floor crumbles a moment after you step on it. Freezing time stops it falling. Keep moving!"), X0 + 2000.f);
+	}
+
+	// --- 10. Final room: crush the boss with the gold press ------------------
+	{
+		const float X0 = 17800.f;
+		Floor(X0, X0 + 2000.f, -900.f, 900.f, H);
+		SideWalls(X0, X0 + 2000.f, 900.f, 600.f, H);
+		Block(FVector(X0, 625.f, H + 300.f), FVector(40.f, 550.f, 600.f), FreezeColors::Wall);
+		Block(FVector(X0, -625.f, H + 300.f), FVector(40.f, 550.f, 600.f), FreezeColors::Wall);
+		MakeMover(FVector(X0 + 1000.f, 0.f, H), [&](ATimeMover& M)
 		{
 			M.Mode = ETimeMoveMode::PingPong;
 			M.Deadly = ETimeDeadly::MovingToB;
-			M.Size = FVector(200.f, 350.f, 400.f);
-			M.OffsetA = FVector::ZeroVector;
-			M.OffsetB = FVector(0.f, -350.f * Side, 0.f);
+			M.Size = FVector(500.f, 500.f, 300.f);
+			M.OffsetA = FVector(0.f, 0.f, 900.f);
+			M.OffsetB = FVector(0.f, 0.f, 150.f);
 			M.Period = 3.2f;
-			M.Color = FreezeColors::Danger;
-			M.HitMessage = TEXT("Crushed!");
+			M.bTimeless = true;
+			M.bCrushesSentinels = true;
+			M.HitMessage = TEXT("The press flattened you.");
 		});
+		SpawnSentinel(FVector(X0 + 1600.f, 500.f, H + 120.f), FVector2D(X0 + 50.f, -880.f), FVector2D(X0 + 1950.f, 880.f), 430.f, 3000.f, true);
+		Gate = Block(FVector(X0 + 2000.f, 0.f, H + 300.f), FVector(60.f, 1800.f, 600.f), FreezeColors::Danger);
+		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
+			TEXT("This Sentinel's gold armour stops arrows. Gold things keep moving while you freeze. Lead it under the gold press."), X0 + 2000.f);
 	}
-	SpawnSentinel(FVector(10300.f, 0.f, H + 100.f), FVector2D(10120.f, -340.f), FVector2D(10390.f, 340.f), 400.f, 1000.f, false);
-	Bridge(11000.f, H, 700.f, 8.f, 0.3f);
-	Blade(11000.f, H, 2.8f, 0.f, true);
-	Floor(11600.f, 12000.f, -350.f, 350.f, H);
-	SpawnHourglass(FVector(11850.f, 0.f, H + 80.f));
-	AddCheckpoint(9650.f, FVector(9700.f, 0.f, H + 100.f), FString(), 0.f);
-
-	// --- 7. Final room: crush the Sentinel with the gold press ---------------
-	Floor(12000.f, 14000.f, -900.f, 900.f, H);
-	SideWalls(12000.f, 14000.f, 900.f, 600.f, H);
-	Block(FVector(12000.f, 625.f, H + 300.f), FVector(40.f, 550.f, 600.f), FreezeColors::Wall);
-	Block(FVector(12000.f, -625.f, H + 300.f), FVector(40.f, 550.f, 600.f), FreezeColors::Wall);
-	MakeMover(FVector(13000.f, 0.f, H), [&](ATimeMover& M)
-	{
-		M.Mode = ETimeMoveMode::PingPong;
-		M.Deadly = ETimeDeadly::MovingToB;
-		M.Size = FVector(500.f, 500.f, 300.f);
-		M.OffsetA = FVector(0.f, 0.f, 900.f);
-		M.OffsetB = FVector(0.f, 0.f, 150.f);
-		M.Period = 3.2f;
-		M.bTimeless = true;
-		M.bCrushesSentinels = true;
-		M.HitMessage = TEXT("The press flattened you.");
-	});
-	SpawnSentinel(FVector(13600.f, 500.f, H + 120.f), FVector2D(12050.f, -880.f), FVector2D(13950.f, 880.f), 430.f, 3000.f, true);
-	Gate = Block(FVector(14000.f, 0.f, H + 300.f), FVector(60.f, 1800.f, 600.f), FreezeColors::Danger);
-	AddCheckpoint(12050.f, FVector(12150.f, 0.f, H + 100.f),
-		TEXT("The gate opens once the Sentinel is gone. Gold things keep moving while you freeze. Lead it under the gold press."), 14000.f);
 
 	// --- Goal: the clock tower ------------------------------------------------
-	Floor(14000.f, 15000.f, -500.f, 500.f, H);
+	Floor(19800.f, 20800.f, -500.f, 500.f, H);
 	{
 		const FLinearColor TowerStone(0.55f, 0.47f, 0.38f);
 		const FLinearColor Roof(0.45f, 0.12f, 0.12f);
 		const FLinearColor Wood(0.35f, 0.2f, 0.1f);
 		const FLinearColor Cream(0.92f, 0.88f, 0.78f);
 		const FLinearColor Dark(0.08f, 0.08f, 0.1f);
-		const float TX = 14700.f;		// tower centre
+		const float TX = 20500.f;		// tower centre
 		const float Front = TX - 300.f;	// face of the tower the player walks up to
 
 		// Body of the tower with a plinth and a ledge under the belfry
@@ -417,6 +522,7 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 		{
 			InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AFreezeGameMode::OnFreezePressed);
 			InputComponent->BindKey(EKeys::X, IE_Pressed, this, &AFreezeGameMode::OnCloseHint);
+			InputComponent->BindKey(EKeys::F, IE_Pressed, this, &AFreezeGameMode::OnShootPressed);
 			InputComponent->BindKey(EKeys::R, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
 			InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
 		}
@@ -554,17 +660,129 @@ void AFreezeGameMode::RespawnPlayer()
 	{
 		It->ResetToHome();
 	}
+	for (TActorIterator<ACrumbleTile> It(GetWorld()); It; ++It)
+	{
+		It->ResetTile();
+	}
 }
 
 void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 {
-	AddMessage(TEXT("The Sentinel is crushed!"), FreezeColors::Gold);
-	if (Sentinel && Sentinel->bBoss && Gate)
+	if (!Sentinel) return;
+
+	if (Sentinel->bBoss)
 	{
-		Gate->Destroy();
-		Gate = nullptr;
-		AddMessage(TEXT("The gate is open! Ring the clock tower bell."), FreezeColors::Gold);
+		AddMessage(TEXT("The Sentinel is crushed!"), FreezeColors::Gold);
+		if (Gate)
+		{
+			Gate->Destroy();
+			Gate = nullptr;
+			AddMessage(TEXT("The gate is open! Ring the clock tower bell."), FreezeColors::Gold);
+		}
+		return;
 	}
+
+	if (Sentinel->bArena)
+	{
+		ArenaDefeated++;
+		AddMessage(FString::Printf(TEXT("Sentinel down! %d of 3"), ArenaDefeated), FreezeColors::Gold);
+		if (ArenaDefeated >= 3) OpenGate(1, TEXT("All three Sentinels are down. The gate is open!"));
+		return;
+	}
+
+	AddMessage(TEXT("Sentinel down!"), FreezeColors::Gold);
+}
+
+void AFreezeGameMode::OpenGate(int32 Index, const FString& Message)
+{
+	if (Gates.IsValidIndex(Index) && Gates[Index])
+	{
+		Gates[Index]->Destroy();
+		Gates[Index] = nullptr;
+		AddMessage(Message, FreezeColors::Gold);
+	}
+}
+
+void AFreezeGameMode::OnShootPressed()
+{
+	if (!IsPlaying() || !bHasBow || ShotCooldown > 0.f) return;
+
+	ACharacter* Player = GetPlayerCharacter();
+	APlayerController* PC = Player ? Cast<APlayerController>(Player->GetController()) : nullptr;
+	if (!PC) return;
+	ShotCooldown = 0.35f;
+
+	FVector ViewLoc;
+	FRotator ViewRot;
+	PC->GetPlayerViewPoint(ViewLoc, ViewRot);
+	const FVector Dir = ViewRot.Vector();
+	const FVector Start = ViewLoc + Dir * 150.f;
+	const FVector End = ViewLoc + Dir * 8000.f;
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ReadySetStopArrow), false, Player);
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	Objects.AddObjectTypesToQuery(ECC_Pawn);
+
+	FHitResult Hit;
+	const bool bHit = GetWorld()->LineTraceSingleByObjectType(Hit, Start, End, Objects, Params);
+	const FVector HitPoint = bHit ? Hit.ImpactPoint : End;
+
+	// Arrow streak from the player to where it landed
+	const FVector Muzzle = Player->GetActorLocation() + FVector(0.f, 0.f, 50.f) + Player->GetActorForwardVector() * 40.f;
+	const FVector Path = HitPoint - Muzzle;
+	if (Path.Size() > 10.f)
+	{
+		AGeoBlock* Streak = GetWorld()->SpawnActor<AGeoBlock>(AGeoBlock::StaticClass(), Muzzle + Path * 0.5f, FRotationMatrix::MakeFromZ(Path.GetSafeNormal()).Rotator());
+		if (Streak)
+		{
+			Streak->SetActorEnableCollision(false);
+			Streak->Init(FVector(4.f, 4.f, Path.Size()), FLinearColor(1.f, 0.95f, 0.7f), EGeoShape::Cylinder);
+			Streak->SetLifeSpan(0.15f);
+		}
+	}
+
+	if (!bHit) return;
+	AActor* HitActor = Hit.GetActor();
+
+	if (ASentinel* S = Cast<ASentinel>(HitActor))
+	{
+		if (S->bBoss)
+		{
+			AddMessage(TEXT("Arrows bounce off its gold armour!"), FreezeColors::Gold);
+		}
+		else
+		{
+			S->Defeat();
+		}
+		return;
+	}
+
+	if (ATimeMover* M = Cast<ATimeMover>(HitActor))
+	{
+		if (M->bIsTarget)
+		{
+			M->Destroy();
+			TargetsHit++;
+			AddMessage(FString::Printf(TEXT("Target hit! %d of 2"), TargetsHit), FreezeColors::Gold);
+			if (TargetsHit >= 2) OpenGate(0, TEXT("Both targets hit. The gate is open!"));
+		}
+	}
+}
+
+void AFreezeGameMode::UpdateArrowKeys(ACharacter* Player)
+{
+	APlayerController* PC = Cast<APlayerController>(Player->GetController());
+	if (!PC) return;
+
+	const float Forward = (PC->IsInputKeyDown(EKeys::Up) ? 1.f : 0.f) - (PC->IsInputKeyDown(EKeys::Down) ? 1.f : 0.f);
+	const float Right = (PC->IsInputKeyDown(EKeys::Right) ? 1.f : 0.f) - (PC->IsInputKeyDown(EKeys::Left) ? 1.f : 0.f);
+	if (Forward == 0.f && Right == 0.f) return;
+
+	const FRotator Yaw(0.f, PC->GetControlRotation().Yaw, 0.f);
+	Player->AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::X), Forward);
+	Player->AddMovementInput(FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y), Right);
 }
 
 void AFreezeGameMode::Win()
@@ -602,6 +820,20 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
+	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
+	UpdateArrowKeys(Player);
+
+	// Pick up the bow
+	if (!bHasBow && FVector::Dist(Player->GetActorLocation(), W(BowSpot)) < 160.f)
+	{
+		bHasBow = true;
+		if (BowPickup)
+		{
+			BowPickup->Destroy();
+			BowPickup = nullptr;
+		}
+		AddMessage(TEXT("You got the bow! Press F to shoot."), FreezeColors::Gold);
+	}
 
 	// The clock stops while time is frozen; the freeze is paid for up front
 	if (bFrozen)

@@ -102,7 +102,16 @@ void AFreezeHUD::DrawHUD()
 		DrawCentered(Label, SW * 0.5f, BarY + BarH + 1.f * UI, Small, 0.8f * UI, FLinearColor(0.85f, 0.9f, 1.f));
 	}
 
-	// --- Tip panel (top left) ---
+	// --- Crosshair once the player has the bow ---
+	if (GM->bHasBow && GM->IsPlaying())
+	{
+		const float CX = SW * 0.5f, CY = SH * 0.5f, L = 8.f * UI, T = 2.f * UI;
+		const FLinearColor C(1.f, 1.f, 1.f, 0.85f);
+		DrawRect(C, CX - L, CY - T * 0.5f, L * 2.f, T);
+		DrawRect(C, CX - T * 0.5f, CY - L, T, L * 2.f);
+	}
+
+	// --- Tip panel ---
 	if (!GM->HintText.IsEmpty() && GM->IsPlaying())
 	{
 		const float W = 380.f * UI;
