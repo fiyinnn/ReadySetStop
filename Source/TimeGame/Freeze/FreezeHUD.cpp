@@ -144,6 +144,10 @@ void AFreezeHUD::DrawHUD()
 		const bool bWon = GM->State == EFreezeState::Won;
 		const FString Title = bWon ? TEXT("You reached the clock tower!") : TEXT("Time's up!");
 		DrawCentered(Title, SW * 0.5f, SH * 0.36f, Big, 2.4f * UI, bWon ? FreezeColors::Gold : FLinearColor(1.f, 0.35f, 0.3f));
-		DrawCentered(TEXT("Press R to play again"), SW * 0.5f, SH * 0.36f + 90.f * UI, Small, 1.1f * UI, FLinearColor(0.8f, 0.85f, 1.f));
+		// PLAYTEST ONLY: remove these stats before submitting
+		const FString Stats = FString::Printf(TEXT("Time left %s     Freezes used %d     Times hit %d     Played %s"),
+			*FormatClock(GM->TimeLeft), GM->Freezes, GM->Hits, *FormatClock(GM->PlaySeconds));
+		DrawCentered(Stats, SW * 0.5f, SH * 0.36f + 80.f * UI, Small, 1.1f * UI, FLinearColor::White);
+		DrawCentered(TEXT("Press R to play again"), SW * 0.5f, SH * 0.36f + 130.f * UI, Small, 1.1f * UI, FLinearColor(0.8f, 0.85f, 1.f));
 	}
 }
