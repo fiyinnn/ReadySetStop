@@ -90,6 +90,7 @@ public:
 
 	void AddMessage(const FString& Text, const FLinearColor& Color = FLinearColor::White);
 	void AddWarning(const FString& Text);
+	void ShowGoldWarning(const FString& Text);
 
 	/** Plays /Game/Audio/<Name> if that sound has been imported; silently does nothing otherwise. */
 	void PlaySfx(const TCHAR* Name, float Volume = 1.f);
@@ -128,7 +129,8 @@ protected:
 	int32 CurrentCheckpoint = -1;
 	float HintEndX = 0.f;
 	float InvulnerableLeft = 0.f;
-	int32 GoldReminders = 0;
+	int32 GoldLessonCheckpoint = -1;
+	TMap<int32, int32> GoldWarningsShown;
 	int32 TargetsHit = 0;
 	int32 ArenaDefeated = 0;
 	float ShotCooldown = 0.f;

@@ -118,7 +118,7 @@ void ASentinel::Tick(float DeltaSeconds)
 		const float CatchDistance = GetCapsuleComponent()->GetScaledCapsuleRadius() + 70.f;
 		if (ToPlayer.Size2D() < CatchDistance)
 		{
-			GM->PlayerHit(TEXT("The Sentinel caught you."));
+			GM->PlayerHit(TEXT("The Guard caught you."));
 		}
 	}
 	else

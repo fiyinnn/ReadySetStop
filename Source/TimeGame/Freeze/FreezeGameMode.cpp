@@ -4,7 +4,6 @@
 #include "CrumbleTile.h"
 #include "FlyingArrow.h"
 #include "Hourglass.h"
-#include "RisingSand.h"
 #include "Sentinel.h"
 #include "TimeMover.h"
 #include "Components/AudioComponent.h"
@@ -306,11 +305,12 @@ void AFreezeGameMode::BuildCourse()
 		Blade(X0 + 500.f, H, 3.0f, 0.f, true);
 		Blade(X0 + 1000.f, H, 1.8f, 0.f, false);
 		Blade(X0 + 1250.f, H, 2.8f, 0.25f, true);
+		GoldLessonCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
 			TEXT("Gold things are outside of time. Your freeze won't stop them, so time your run instead."), X0 + 1600.f);
 	}
 
-	// --- 6. Rising sand: gold you can't freeze, climb out --------------------
+	// --- 6. Moving blocks: climb to the exit at the top ----------------------
 	{
 		const float X0 = 9000.f;
 		const FLinearColor Wood(0.42f, 0.27f, 0.14f);
@@ -352,19 +352,8 @@ void AFreezeGameMode::BuildCourse()
 		Lift(X0 + 400.f, -250.f, 1400.f, 300.f, 200.f, FVector(900.f, 0.f, 0.f), 7.f, 0.f);
 		Ledge(X0 + 1500.f, -150.f, 1400.f, 200.f, 500.f);
 
-		const FTransform T(W(FVector(X0 + 800.f, 0.f, H - 300.f)));
-		if (ARisingSand* Sand = GetWorld()->SpawnActorDeferred<ARisingSand>(ARisingSand::StaticClass(), T))
-		{
-			Sand->AreaMin = FVector2D(CourseOrigin.X + X0 + 20.f, CourseOrigin.Y - 480.f);
-			Sand->AreaMax = FVector2D(CourseOrigin.X + X0 + 1580.f, CourseOrigin.Y + 480.f);
-			Sand->StartZ = CourseOrigin.Z + H - 300.f;
-			Sand->MaxZ = CourseOrigin.Z + H + 1500.f;
-			Sand->Speed = 25.f;
-			Sand->TriggerX = CourseOrigin.X + X0 + 150.f;
-			Sand->FinishSpawning(T);
-		}
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 80.f, 0.f, H + 100.f),
-			TEXT("Gold sand starts rising when you walk in, and your freeze can't stop it. Climb to the exit at the top. Freezing still holds the blue platforms still."), X0 + 1600.f);
+			TEXT("Get to the top to leave this room. Ride the blue moving blocks, and freeze them to make the jumps easier."), X0 + 1600.f);
 	}
 
 	// --- 7. The Sentinel ------------------------------------------------------
@@ -383,7 +372,7 @@ void AFreezeGameMode::BuildCourse()
 		SpawnSentinel(FVector(X0 + 1100.f, 0.f, H + 100.f), FVector2D(X0 + 50.f, -680.f), FVector2D(X0 + 1950.f, 680.f), 380.f, 1400.f, false);
 		SpawnHourglass(FVector(X0 + 1750.f, 550.f, H + 80.f));
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 100.f, 0.f, H + 100.f),
-			TEXT("A Sentinel guards this hall. If it touches you, you're sent back. Frozen, it's just a statue."), X0 + 2000.f);
+			TEXT("A Guard guards this hall. If it touches you, you're sent back. Frozen, it's just a statue."), X0 + 2000.f);
 	}
 
 	// --- 7. Archery range: learn to shoot ------------------------------------
@@ -435,7 +424,7 @@ void AFreezeGameMode::BuildCourse()
 		}
 		Gates.Add(Block(FVector(X0 + 1800.f, 0.f, H + 250.f), FVector(60.f, 1600.f, 500.f), FreezeColors::Danger));
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
-			TEXT("Shoot all three Sentinels to open the gate. Frozen Sentinels make easy targets."), X0 + 1800.f);
+			TEXT("Shoot all three Guards to open the gate. Frozen Guards make easy targets."), X0 + 1800.f);
 	}
 
 	// --- 9. Everything together: crushers, crumbling floor, bridge -----------
@@ -499,7 +488,7 @@ void AFreezeGameMode::BuildCourse()
 		SpawnSentinel(FVector(X0 + 1600.f, 500.f, H + 120.f), FVector2D(X0 + 50.f, -880.f), FVector2D(X0 + 1950.f, 880.f), 430.f, 3000.f, true);
 		Gate = Block(FVector(X0 + 2000.f, 0.f, H + 300.f), FVector(60.f, 1800.f, 600.f), FreezeColors::Danger);
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
-			TEXT("This Sentinel's gold armour stops arrows. Gold things keep moving while you freeze. Lead it under the gold press."), X0 + 2000.f);
+			TEXT("This Guard's gold armour stops arrows. Gold things keep moving while you freeze. Lead it under the gold press."), X0 + 2000.f);
 	}
 
 	// --- Goal: the clock tower ------------------------------------------------
@@ -672,8 +661,7 @@ void AFreezeGameMode::OnFreezePressed()
 	FreezeLeft = FreezeDuration;
 	SetFrozen(true);
 
-	// Remind the player (the first few times) when gold things nearby keep moving
-	if (GoldReminders < 3)
+	// Remind the player when gold things nearby keep moving
 	{
 		if (ACharacter* Player = GetPlayerCharacter())
 		{
@@ -681,8 +669,7 @@ void AFreezeGameMode::OnFreezePressed()
 			{
 				if (It->bTimeless && FVector::Dist2D(It->GetActorLocation(), Player->GetActorLocation()) < 1500.f)
 				{
-					AddWarning(TEXT("Gold things ignore your freeze!"));
-					GoldReminders++;
+					ShowGoldWarning(TEXT("Gold things ignore your freeze!"));
 					break;
 				}
 			}
@@ -750,6 +737,18 @@ void AFreezeGameMode::AddWarning(const FString& Text)
 	if (Messages.Num() > 4) Messages.RemoveAt(0);
 }
 
+void AFreezeGameMode::ShowGoldWarning(const FString& Text)
+{
+	// Every time in the section that teaches gold; at most twice in each later section
+	if (CurrentCheckpoint != GoldLessonCheckpoint)
+	{
+		int32& Shown = GoldWarningsShown.FindOrAdd(CurrentCheckpoint);
+		if (Shown >= 2) return;
+		Shown++;
+	}
+	AddWarning(Text);
+}
+
 void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
 {
 	const FName Key(Name);
@@ -779,7 +778,7 @@ void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
 	TimeLeft = FMath::Max(0.f, TimeLeft - HitPenalty);
 	AddMessage(FString::Printf(TEXT("%s  -%ds"), *Reason, FMath::RoundToInt(HitPenalty)), FLinearColor(1.f, 0.35f, 0.3f));
 	PlaySfx(TEXT("SFX_Hit"));
-	if (bByGold) AddWarning(TEXT("Gold things ignore your freeze! Time your run instead."));
+	if (bByGold) ShowGoldWarning(TEXT("Gold things ignore your freeze! Time your run instead."));
 	RespawnPlayer();
 
 	if (TimeLeft <= 0.f) Lose();
@@ -809,10 +808,6 @@ void AFreezeGameMode::RespawnPlayer()
 	{
 		It->ResetTile();
 	}
-	for (TActorIterator<ARisingSand> It(GetWorld()); It; ++It)
-	{
-		It->ResetSand();
-	}
 }
 
 void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
@@ -822,7 +817,7 @@ void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 
 	if (Sentinel->bBoss)
 	{
-		AddMessage(TEXT("The Sentinel is crushed!"), FreezeColors::Gold);
+		AddMessage(TEXT("The Guard is crushed!"), FreezeColors::Gold);
 		if (Gate)
 		{
 			PlaySfx(TEXT("SFX_GateOpen"));
@@ -836,12 +831,12 @@ void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 	if (Sentinel->bArena)
 	{
 		ArenaDefeated++;
-		AddMessage(FString::Printf(TEXT("Sentinel down! %d of 3"), ArenaDefeated), FreezeColors::Gold);
-		if (ArenaDefeated >= 3) OpenGate(1, TEXT("All three Sentinels are down. The gate is open!"));
+		AddMessage(FString::Printf(TEXT("Guard down! %d of 3"), ArenaDefeated), FreezeColors::Gold);
+		if (ArenaDefeated >= 3) OpenGate(1, TEXT("All three Guards are down. The gate is open!"));
 		return;
 	}
 
-	AddMessage(TEXT("Sentinel down!"), FreezeColors::Gold);
+	AddMessage(TEXT("Guard down!"), FreezeColors::Gold);
 }
 
 void AFreezeGameMode::OpenGate(int32 Index, const FString& Message)

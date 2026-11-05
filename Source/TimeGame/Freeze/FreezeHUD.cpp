@@ -65,22 +65,34 @@ void AFreezeHUD::DrawHUD()
 	const float UI = FMath::Max(0.6f, SH / 720.f);
 	const float Margin = 16.f * UI;
 	const FLinearColor PanelColor(0.f, 0.f, 0.f, 0.55f);
-	const FLinearColor Orange(1.f, 0.55f, 0.15f);
 
 	// --- Title screen ---
 	if (GM->State == EFreezeState::Title)
 	{
 		DrawRect(FLinearColor(0.02f, 0.03f, 0.06f, 0.82f), 0.f, 0.f, SW, SH);
 		float Y = SH * 0.16f;
-		DrawCentered(TEXT("ReadySetStop"), SW * 0.5f, Y, Big, 3.2f * UI, FreezeColors::Gold);
+		{
+			// "Ready" yellow, "Set" green, "Stop" red, drawn side by side as one centred title
+			const float TS = 3.2f * UI;
+			float W1 = 0.f, W2 = 0.f, W3 = 0.f, TH = 0.f;
+			GetTextSize(TEXT("Ready"), W1, TH, Big, TS);
+			GetTextSize(TEXT("Set"), W2, TH, Big, TS);
+			GetTextSize(TEXT("Stop"), W3, TH, Big, TS);
+			float X = (SW - (W1 + W2 + W3)) * 0.5f;
+			DrawText(TEXT("Ready"), FLinearColor(1.f, 0.85f, 0.1f), X, Y, Big, TS);
+			X += W1;
+			DrawText(TEXT("Set"), FLinearColor(0.2f, 0.85f, 0.3f), X, Y, Big, TS);
+			X += W2;
+			DrawText(TEXT("Stop"), FLinearColor(1.f, 0.2f, 0.15f), X, Y, Big, TS);
+		}
 		Y += 96.f * UI;
 		DrawCentered(TEXT("Race the clock to the tower and ring its bell."), SW * 0.5f, Y, Small, 1.3f * UI, FLinearColor::White);
 		Y += 34.f * UI;
-		DrawCentered(TEXT("Freeze time to get past blades, Sentinels and moving platforms,"), SW * 0.5f, Y, Small, 1.1f * UI, FLinearColor(0.85f, 0.9f, 1.f));
+		DrawCentered(TEXT("Freeze time to get past blades, Guards and moving platforms,"), SW * 0.5f, Y, Small, 1.1f * UI, FLinearColor(0.85f, 0.9f, 1.f));
 		Y += 28.f * UI;
 		DrawCentered(TEXT("but every freeze costs you time. Gold things ignore your freeze."), SW * 0.5f, Y, Small, 1.1f * UI, FLinearColor(0.85f, 0.9f, 1.f));
 		Y += 56.f * UI;
-		DrawCentered(TEXT("CONTROLS"), SW * 0.5f, Y, Small, 1.1f * UI, FLinearColor(1.f, 0.55f, 0.15f));
+		DrawCentered(TEXT("CONTROLS"), SW * 0.5f, Y, Small, 1.1f * UI, FLinearColor(0.75f, 0.8f, 0.9f));
 		Y += 34.f * UI;
 		const TCHAR* Lines[] = {
 			TEXT("WASD or arrow keys   move"),
@@ -103,21 +115,21 @@ void AFreezeHUD::DrawHUD()
 	{
 		const float W = 240.f * UI, H = 92.f * UI;
 		const float X = (SW - W) * 0.5f, Y = Margin;
-		DrawPanel(X, Y, W, H, PanelColor);
+		DrawPanel(X, Y, W, H, FLinearColor(1.f, 1.f, 1.f, 0.9f));
 
-		FLinearColor ClockColor = FLinearColor::White;
-		if (GM->bFrozen) ClockColor = FreezeColors::Ice;
-		else if (GM->TimeLeft < 30.f) ClockColor = FLinearColor(1.f, 0.3f, 0.25f);
+		FLinearColor ClockColor(0.08f, 0.08f, 0.1f);
+		if (GM->bFrozen) ClockColor = FLinearColor(0.05f, 0.4f, 0.75f);
+		else if (GM->TimeLeft < 30.f) ClockColor = FLinearColor(0.85f, 0.1f, 0.08f);
 
 		DrawCentered(FormatClock(GM->TimeLeft), SW * 0.5f, Y + 4.f * UI, Big, 2.2f * UI, ClockColor);
 
 		// Freeze meter
 		const float BarW = W - 30.f * UI, BarH = 10.f * UI;
 		const float BarX = X + 15.f * UI, BarY = Y + H - 26.f * UI;
-		DrawRect(FLinearColor(0.15f, 0.15f, 0.18f, 0.9f), BarX, BarY, BarW, BarH);
+		DrawRect(FLinearColor(0.78f, 0.8f, 0.84f, 1.f), BarX, BarY, BarW, BarH);
 
 		float Fill = 1.f;
-		FLinearColor FillColor = FreezeColors::Ice;
+		FLinearColor FillColor(0.1f, 0.6f, 0.9f);
 		FString Label = FString::Printf(TEXT("E  FREEZE  (-%ds)"), FMath::RoundToInt(GM->FreezeCost));
 		if (GM->bFrozen)
 		{
@@ -131,7 +143,7 @@ void AFreezeHUD::DrawHUD()
 			Label = TEXT("recharging");
 		}
 		DrawRect(FillColor, BarX, BarY, BarW * FMath::Clamp(Fill, 0.f, 1.f), BarH);
-		DrawCentered(Label, SW * 0.5f, BarY + BarH + 1.f * UI, Small, 0.8f * UI, FLinearColor(0.85f, 0.9f, 1.f));
+		DrawCentered(Label, SW * 0.5f, BarY + BarH + 1.f * UI, Small, 0.8f * UI, FLinearColor(0.2f, 0.22f, 0.28f));
 	}
 
 	// --- Crosshair once the player has the bow ---
@@ -156,8 +168,7 @@ void AFreezeHUD::DrawHUD()
 		const float X = Margin, Y = SH - Margin - H;
 
 		DrawPanel(X, Y, W, H, PanelColor);
-		DrawRect(Orange, X, Y, 4.f * UI, H);
-		DrawText(TEXT("TIP"), Orange, X + Pad, Y + Pad, Small, 1.0f * UI);
+		DrawText(TEXT("TIP"), FLinearColor(0.75f, 0.8f, 0.9f), X + Pad, Y + Pad, Small, 1.0f * UI);
 		for (int32 i = 0; i < Lines.Num(); ++i)
 		{
 			DrawText(Lines[i], FLinearColor::White, X + Pad, Y + Pad + 26.f * UI + i * LH, Small, TextScale);
@@ -165,20 +176,30 @@ void AFreezeHUD::DrawHUD()
 		DrawText(TEXT("[X] hide"), FLinearColor(0.6f, 0.6f, 0.65f), X + Pad, Y + H - Pad - 14.f * UI, Small, 0.75f * UI);
 	}
 
-	// --- Messages (under the clock, where the player is already looking) ---
+	// --- Messages under the clock; red warnings in the top left ---
 	{
 		float Y = Margin + 112.f * UI;
+		float WarnY = Margin;
 		for (int32 i = 0; i < GM->Messages.Num(); ++i)
 		{
 			const FFreezeMessage& M = GM->Messages[i];
 			FLinearColor C = M.Color;
 			C.A = FMath::Clamp(M.Life, 0.f, 1.f);
-			const float Scale = (M.bWarning ? 1.45f : 1.1f) * UI;
+			const float Scale = (M.bWarning ? 1.3f : 1.1f) * UI;
 			float TW = 0.f, TH = 0.f;
 			GetTextSize(M.Text, TW, TH, Big, Scale);
-			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.45f * C.A), SW * 0.5f - TW * 0.5f - 12.f * UI, Y - 2.f * UI, TW + 24.f * UI, TH + 4.f * UI);
-			DrawCentered(M.Text, SW * 0.5f, Y, Big, Scale, C);
-			Y += TH + 10.f * UI;
+			if (M.bWarning)
+			{
+				DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.55f * C.A), Margin, WarnY, TW + 24.f * UI, TH + 8.f * UI);
+				DrawText(M.Text, C, Margin + 12.f * UI, WarnY + 4.f * UI, Big, Scale);
+				WarnY += TH + 14.f * UI;
+			}
+			else
+			{
+				DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.45f * C.A), SW * 0.5f - TW * 0.5f - 12.f * UI, Y - 2.f * UI, TW + 24.f * UI, TH + 4.f * UI);
+				DrawCentered(M.Text, SW * 0.5f, Y, Big, Scale, C);
+				Y += TH + 10.f * UI;
+			}
 		}
 	}
 
