@@ -738,13 +738,17 @@ void AFreezeGameMode::OnShootPressed()
 		if (Streak)
 		{
 			Streak->SetActorEnableCollision(false);
-			Streak->Init(FVector(4.f, 4.f, Path.Size()), FLinearColor(1.f, 0.95f, 0.7f), EGeoShape::Cylinder);
-			Streak->SetLifeSpan(0.15f);
+			Streak->Init(FVector(9.f, 9.f, Path.Size()), FLinearColor(1.f, 0.85f, 0.2f), EGeoShape::Cylinder);
+			Streak->SetLifeSpan(0.4f);
 		}
 	}
 
-	if (!bHit) return;
-	AActor* HitActor = Hit.GetActor();
+	AActor* HitActor = bHit ? Hit.GetActor() : nullptr;
+	if (!Cast<ASentinel>(HitActor) && !(Cast<ATimeMover>(HitActor) && Cast<ATimeMover>(HitActor)->bIsTarget))
+	{
+		AddMessage(TEXT("Missed!"), FLinearColor(0.8f, 0.8f, 0.85f));
+		return;
+	}
 
 	if (ASentinel* S = Cast<ASentinel>(HitActor))
 	{
