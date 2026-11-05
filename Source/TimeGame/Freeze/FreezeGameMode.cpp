@@ -111,10 +111,10 @@ void AFreezeGameMode::RegisterFreezable(AActor* Actor)
 // Course
 // ---------------------------------------------------------------------------
 
-AGeoBlock* AFreezeGameMode::Block(const FVector& Center, const FVector& Size, const FLinearColor& Color, bool bCylinder)
+AGeoBlock* AFreezeGameMode::Block(const FVector& Center, const FVector& Size, const FLinearColor& Color, EGeoShape Shape, const FRotator& Rotation)
 {
-	AGeoBlock* B = GetWorld()->SpawnActor<AGeoBlock>(AGeoBlock::StaticClass(), W(Center), FRotator::ZeroRotator);
-	if (B) B->Init(Size, Color, bCylinder);
+	AGeoBlock* B = GetWorld()->SpawnActor<AGeoBlock>(AGeoBlock::StaticClass(), W(Center), Rotation);
+	if (B) B->Init(Size, Color, Shape);
 	return B;
 }
 
@@ -338,9 +338,61 @@ void AFreezeGameMode::BuildCourse()
 
 	// --- Goal: the clock tower ------------------------------------------------
 	Floor(14000.f, 15000.f, -500.f, 500.f, H);
-	Block(FVector(14700.f, 0.f, H + 800.f), FVector(600.f, 600.f, 1600.f), FreezeColors::Tower, true);
-	Block(FVector(14395.f, 0.f, H + 150.f), FVector(20.f, 200.f, 300.f), FreezeColors::Ice);
-	GoalX = 14250.f;
+	{
+		const FLinearColor TowerStone(0.55f, 0.47f, 0.38f);
+		const FLinearColor Roof(0.45f, 0.12f, 0.12f);
+		const FLinearColor Wood(0.35f, 0.2f, 0.1f);
+		const FLinearColor Cream(0.92f, 0.88f, 0.78f);
+		const FLinearColor Dark(0.08f, 0.08f, 0.1f);
+		const float TX = 14700.f;		// tower centre
+		const float Front = TX - 300.f;	// face of the tower the player walks up to
+
+		// Body of the tower with a plinth and a ledge under the belfry
+		Block(FVector(TX, 0.f, H + 60.f), FVector(700.f, 700.f, 120.f), FreezeColors::Stone);
+		Block(FVector(TX, 0.f, H + 800.f), FVector(600.f, 600.f, 1600.f), TowerStone);
+		Block(FVector(TX, 0.f, H + 1620.f), FVector(680.f, 680.f, 40.f), FreezeColors::Stone);
+
+		// Open belfry: four corner pillars, a bell and a pointed roof
+		for (float PX : { -260.f, 260.f })
+		{
+			for (float PY : { -260.f, 260.f })
+			{
+				Block(FVector(TX + PX, PY, H + 1840.f), FVector(80.f, 80.f, 400.f), TowerStone);
+			}
+		}
+		Block(FVector(TX, 0.f, H + 2060.f), FVector(700.f, 700.f, 40.f), FreezeColors::Stone);
+		Block(FVector(TX, 0.f, H + 2380.f), FVector(760.f, 760.f, 600.f), Roof, EGeoShape::Cone);
+		Block(FVector(TX, 0.f, H + 1890.f), FVector(240.f, 240.f, 240.f), FreezeColors::Gold, EGeoShape::Cone);
+		Block(FVector(TX, 0.f, H + 1760.f), FVector(50.f), Dark, EGeoShape::Sphere);
+
+		// Clock face on the front, with hands that stop when you freeze time
+		Block(FVector(Front - 6.f, 0.f, H + 1250.f), FVector(460.f, 460.f, 12.f), Dark, EGeoShape::Cylinder, FRotator(90.f, 0.f, 0.f));
+		Block(FVector(Front - 14.f, 0.f, H + 1250.f), FVector(420.f, 420.f, 12.f), Cream, EGeoShape::Cylinder, FRotator(90.f, 0.f, 0.f));
+		for (int32 Tick = 0; Tick < 12; ++Tick)
+		{
+			const float A = 2.f * PI * Tick / 12.f;
+			Block(FVector(Front - 22.f, 175.f * FMath::Sin(A), H + 1250.f + 175.f * FMath::Cos(A)), FVector(6.f, 14.f, 30.f), Dark,
+				EGeoShape::Cube, FRotator(0.f, 0.f, -FMath::RadiansToDegrees(A)));
+		}
+		for (int32 Hand = 0; Hand < 2; ++Hand)
+		{
+			MakeMover(FVector(Front - 30.f, 0.f, H + 1250.f), [&](ATimeMover& M)
+			{
+				M.Mode = ETimeMoveMode::Spin;
+				M.Size = Hand == 0 ? FVector(8.f, 14.f, 170.f) : FVector(8.f, 22.f, 110.f);
+				M.Period = Hand == 0 ? 12.f : 144.f;
+				M.Color = Dark;
+			});
+		}
+		Block(FVector(Front - 36.f, 0.f, H + 1250.f), FVector(30.f), Dark, EGeoShape::Sphere);
+
+		// Wooden door, and the bell rope hanging down the front: ring it to finish
+		Block(FVector(Front - 10.f, 0.f, H + 260.f), FVector(20.f, 220.f, 280.f), Wood);
+		Block(FVector(Front - 40.f, 200.f, H + 1500.f), FVector(80.f, 40.f, 30.f), Wood);
+		Block(FVector(Front - 70.f, 200.f, H + 800.f), FVector(10.f, 10.f, 1400.f), FLinearColor(0.75f, 0.65f, 0.4f), EGeoShape::Cylinder);
+		Block(FVector(Front - 70.f, 200.f, H + 100.f), FVector(40.f), FreezeColors::Danger, EGeoShape::Sphere);
+		BellRope = FVector(Front - 70.f, 200.f, H + 100.f);
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -511,7 +563,7 @@ void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 	{
 		Gate->Destroy();
 		Gate = nullptr;
-		AddMessage(TEXT("The gate is open!"), FreezeColors::Gold);
+		AddMessage(TEXT("The gate is open! Ring the clock tower bell."), FreezeColors::Gold);
 	}
 }
 
@@ -600,8 +652,9 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 		return;
 	}
 
-	if (LocalX > GoalX)
+	if (FVector::Dist2D(Loc, W(BellRope)) < 160.f)
 	{
+		AddMessage(TEXT("DONG!"), FreezeColors::Gold);
 		Win();
 	}
 }

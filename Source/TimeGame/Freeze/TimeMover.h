@@ -15,7 +15,8 @@ enum class ETimeMoveMode : uint8
 {
 	PingPong,	// eases back and forth between OffsetA and OffsetB
 	Loop,		// moves A -> B at constant speed, then jumps back to A
-	Swing		// pendulum swinging side to side under the actor's location
+	Swing,		// pendulum swinging side to side under the actor's location
+	Spin		// turns full circles around the X axis (clock hands)
 };
 
 UENUM()

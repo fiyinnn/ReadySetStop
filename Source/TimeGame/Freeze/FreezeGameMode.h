@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "GeoBlock.h"
 #include "FreezeGameMode.generated.h"
 
 class ACharacter;
@@ -100,7 +101,7 @@ protected:
 	void OnRestartPressed();
 
 	// Course building helpers (all positions relative to the course origin)
-	AGeoBlock* Block(const FVector& Center, const FVector& Size, const FLinearColor& Color, bool bCylinder = false);
+	AGeoBlock* Block(const FVector& Center, const FVector& Size, const FLinearColor& Color, EGeoShape Shape = EGeoShape::Cube, const FRotator& Rotation = FRotator::ZeroRotator);
 	void Floor(float X0, float X1, float Y0, float Y1, float Top = 0.f);
 	void SideWalls(float X0, float X1, float HalfWidth, float Height, float Top = 0.f);
 	class AHourglass* SpawnHourglass(const FVector& Location, float Bonus = 20.f);
@@ -110,7 +111,7 @@ protected:
 
 	FVector CourseOrigin = FVector(0.f, 0.f, 2000.f);
 	float KillZ = 0.f;
-	float GoalX = 0.f;
+	FVector BellRope = FVector::ZeroVector;	// touch the bell rope to win
 
 	TArray<FCourseCheckpoint> Checkpoints;
 	int32 CurrentCheckpoint = -1;

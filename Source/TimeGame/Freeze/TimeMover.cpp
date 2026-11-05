@@ -61,7 +61,9 @@ void ATimeMover::BeginPlay()
 	BaseRotation = GetActorRotation();
 
 	const FLinearColor BodyColor = bTimeless ? FreezeColors::Gold : Color;
-	const FVector BodyOffset = (Mode == ETimeMoveMode::Swing) ? FVector(0.f, 0.f, -SwingLength) : FVector::ZeroVector;
+	FVector BodyOffset = FVector::ZeroVector;
+	if (Mode == ETimeMoveMode::Swing) BodyOffset = FVector(0.f, 0.f, -SwingLength);
+	if (Mode == ETimeMoveMode::Spin) BodyOffset = FVector(0.f, 0.f, Size.Z * 0.5f);	// pivot at one end
 
 	Body->SetStaticMesh(CubeMesh);
 	Body->SetRelativeLocation(BodyOffset);
@@ -128,6 +130,11 @@ void ATimeMover::ApplyMotion()
 	{
 		const float Angle = SwingAngle * FMath::Sin(2.f * PI * Cycle);
 		SetActorRotation(BaseRotation + FRotator(0.f, 0.f, Angle));
+		break;
+	}
+	case ETimeMoveMode::Spin:
+	{
+		SetActorRotation(BaseRotation + FRotator(0.f, 0.f, 360.f * FMath::Frac(Cycle)));
 		break;
 	}
 	}
