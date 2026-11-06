@@ -94,6 +94,7 @@ public:
 
 	/** Plays /Game/Audio/<Name> if that sound has been imported; silently does nothing otherwise. */
 	void PlaySfx(const TCHAR* Name, float Volume = 1.f);
+	class USoundBase* FindSound(const TCHAR* Name);
 
 protected:
 	void BuildCourse();
@@ -111,6 +112,8 @@ protected:
 	void DebugNextCheckpoint();
 	void DebugPreviousCheckpoint();
 	void DebugJumpTo(int32 Index);
+	void UpdateLowTimeTicking();
+	void StopTicking();
 	AActor* FindAimTarget(FVector& OutHitPoint) const;
 	void UpdateArrowKeys(ACharacter* Player);
 	void OpenGate(int32 Index, const FString& Message);
@@ -150,6 +153,7 @@ protected:
 	UPROPERTY() TObjectPtr<AGeoBlock> BowPickup;
 	UPROPERTY() TMap<FName, TObjectPtr<class USoundBase>> SoundCache;
 	UPROPERTY() TObjectPtr<class UAudioComponent> Music;
+	UPROPERTY() TObjectPtr<class UAudioComponent> TickLoop;
 	int32 LastTickSecond = -1;
 	UPROPERTY() TArray<TObjectPtr<AGeoBlock>> Gates;	// 0 = archery range, 1 = archery arena
 };

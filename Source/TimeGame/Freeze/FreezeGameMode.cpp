@@ -609,6 +609,18 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 			// Testing only (not in builds): N jumps to the next checkpoint, B to the previous one
 			InputComponent->BindKey(EKeys::N, IE_Pressed, this, &AFreezeGameMode::DebugNextCheckpoint);
 			InputComponent->BindKey(EKeys::B, IE_Pressed, this, &AFreezeGameMode::DebugPreviousCheckpoint);
+			{
+				// 1-9 = sections 1-9, 0 = 10, minus = 11, equals = 12
+				const FKey SectionKeys[] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five, EKeys::Six,
+					EKeys::Seven, EKeys::Eight, EKeys::Nine, EKeys::Zero, EKeys::Hyphen, EKeys::Equals };
+				for (int32 k = 0; k < UE_ARRAY_COUNT(SectionKeys); ++k)
+				{
+					const int32 Target = k + 1;
+					FInputKeyBinding Binding(FInputChord(SectionKeys[k]), IE_Pressed);
+					Binding.KeyDelegate.GetDelegateForManualSet().BindLambda([this, Target]() { DebugJumpTo(Target); });
+					InputComponent->KeyBindings.Emplace(MoveTemp(Binding));
+				}
+			}
 #endif
 			InputComponent->BindKey(EKeys::R, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
 			InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
@@ -648,6 +660,7 @@ void AFreezeGameMode::SetFrozen(bool bNewFrozen)
 		Music->SetPaused(bFrozen);	// silence while frozen, back to the music after
 	}
 	LastTickSecond = -1;
+	if (bFrozen) StopTicking();
 }
 
 void AFreezeGameMode::OnFreezePressed()
@@ -658,7 +671,6 @@ void AFreezeGameMode::OnFreezePressed()
 	if (bFrozen)
 	{
 		SetFrozen(false);
-		PlaySfx(TEXT("SFX_Unfreeze"));
 		CooldownLeft = FreezeCooldown;
 		return;
 	}
@@ -669,7 +681,6 @@ void AFreezeGameMode::OnFreezePressed()
 		return;
 	}
 	Freezes++;
-	PlaySfx(TEXT("SFX_Freeze"));
 	TimeLeft -= FreezeCost;
 	FreezeLeft = FreezeDuration;
 	SetFrozen(true);
@@ -797,6 +808,14 @@ void AFreezeGameMode::ShowGoldWarning(const FString& Text)
 
 void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
 {
+	if (USoundBase* Sound = FindSound(Name))
+	{
+		UGameplayStatics::PlaySound2D(this, Sound, Volume);
+	}
+}
+
+USoundBase* AFreezeGameMode::FindSound(const TCHAR* Name)
+{
 	const FName Key(Name);
 	TObjectPtr<USoundBase>* Cached = SoundCache.Find(Key);
 	USoundBase* Sound = nullptr;
@@ -810,10 +829,41 @@ void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
 		Sound = LoadObject<USoundBase>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet);
 		SoundCache.Add(Key, Sound);
 	}
-	if (Sound)
+	return Sound;
+}
+
+void AFreezeGameMode::UpdateLowTimeTicking()
+{
+	const bool bShouldTick = IsPlaying() && !bFrozen && TimeLeft < 30.f;
+	if (!bShouldTick)
 	{
-		UGameplayStatics::PlaySound2D(this, Sound, Volume);
+		StopTicking();
+		return;
 	}
+	USoundBase* Tick = FindSound(TEXT("SFX_Tick"));
+	if (!Tick) return;
+
+	if (Tick->GetDuration() <= 1.5f)
+	{
+		// A single tick: play it once a second
+		const int32 Second = FMath::FloorToInt(TimeLeft);
+		if (Second != LastTickSecond)
+		{
+			LastTickSecond = Second;
+			PlaySfx(TEXT("SFX_Tick"), 0.6f);
+		}
+	}
+	else
+	{
+		// A longer ticking clip: keep one copy running, and stop it when no longer needed
+		if (!TickLoop) TickLoop = UGameplayStatics::SpawnSound2D(this, Tick, 0.6f);
+		else if (!TickLoop->IsPlaying()) TickLoop->Play();
+	}
+}
+
+void AFreezeGameMode::StopTicking()
+{
+	if (TickLoop && TickLoop->IsPlaying()) TickLoop->Stop();
 }
 
 void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
@@ -823,7 +873,7 @@ void AFreezeGameMode::PlayerHit(const FString& Reason, bool bByGold)
 	Hits++;
 	TimeLeft = FMath::Max(0.f, TimeLeft - HitPenalty);
 	AddMessage(FString::Printf(TEXT("%s  -%ds"), *Reason, FMath::RoundToInt(HitPenalty)), FLinearColor(1.f, 0.35f, 0.3f));
-	PlaySfx(TEXT("SFX_Hit"));
+	PlaySfx(TEXT("SFX_Getting_Hit"));
 	if (bByGold) ShowGoldWarning(TEXT("Gold things ignore your freeze! Time your run instead."));
 	RespawnPlayer();
 
@@ -1022,6 +1072,7 @@ void AFreezeGameMode::UpdateArrowKeys(ACharacter* Player)
 void AFreezeGameMode::Win()
 {
 	State = EFreezeState::Won;
+	StopTicking();
 	if (Music) Music->FadeOut(2.f, 0.f);
 	SetFrozen(false);
 	HintText.Empty();
@@ -1030,7 +1081,8 @@ void AFreezeGameMode::Win()
 void AFreezeGameMode::Lose()
 {
 	State = EFreezeState::Lost;
-	PlaySfx(TEXT("SFX_TimeUp"));
+	StopTicking();
+	PlaySfx(TEXT("SFX_GameOver"));
 	if (Music) Music->FadeOut(1.f, 0.f);
 	SetFrozen(false);
 	HintText.Empty();
@@ -1059,30 +1111,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
 	if (Music && !bFrozen && !Music->IsPlaying()) Music->Play();
-	if (bFrozen)
-	{
-		// While time is frozen, the music stops and a clock ticks once a second
-		const int32 Tick = FMath::FloorToInt(FreezeLeft);
-		if (Tick != LastTickSecond)
-		{
-			LastTickSecond = Tick;
-			PlaySfx(TEXT("SFX_Tick"), 0.8f);
-		}
-	}
-	else if (TimeLeft < 30.f)
-	{
-		const int32 Second = FMath::FloorToInt(TimeLeft);
-		if (Second != LastTickSecond)
-		{
-			LastTickSecond = Second;
-			PlaySfx(TEXT("SFX_Tick"), 0.5f);
-		}
-	}
-	if (bHasBow)
-	{
-		FVector Ignored;
-		bAimOnTarget = FindAimTarget(Ignored) != nullptr;
-	}
+	UpdateLowTimeTicking();
 	UpdateArrowKeys(Player);
 
 	// Pick up the bow
@@ -1105,8 +1134,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 		if (FreezeLeft <= 0.f)
 		{
 			SetFrozen(false);
-			PlaySfx(TEXT("SFX_Unfreeze"));
-			CooldownLeft = FreezeCooldown;
+				CooldownLeft = FreezeCooldown;
 		}
 	}
 	else
