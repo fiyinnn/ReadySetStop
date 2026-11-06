@@ -2,6 +2,7 @@
 #include "FreezeHUD.h"
 #include "GeoBlock.h"
 #include "CrumbleTile.h"
+#include "BowModel.h"
 #include "FlyingArrow.h"
 #include "Hourglass.h"
 #include "Sentinel.h"
@@ -251,7 +252,7 @@ void AFreezeGameMode::BuildCourse()
 	// --- 2. Frozen things can't hurt you: one blade -------------------------
 	Floor(2800.f, 4400.f, -350.f, 350.f);
 	SideWalls(2800.f, 4400.f, 350.f, 450.f);
-	Blade(3600.f, 0.f, 2.4f, 0.f, false);
+	Blade(3600.f, 0.f, 1.8f, 0.f, false);
 	SpawnHourglass(FVector(4250.f, 250.f, 80.f));
 	AddCheckpoint(2850.f, FVector(2950.f, 0.f, 100.f),
 		TEXT("Frozen things can't hurt you. Freeze the blade, then walk around it. Press E again to unfreeze early."), 4400.f);
@@ -305,7 +306,7 @@ void AFreezeGameMode::BuildCourse()
 		Floor(X0, X0 + 1600.f, -350.f, 350.f, H);
 		SideWalls(X0, X0 + 1600.f, 350.f, 500.f, H);
 		Blade(X0 + 500.f, H, 3.0f, 0.f, true);
-		Blade(X0 + 1000.f, H, 1.8f, 0.f, false);
+		Blade(X0 + 1000.f, H, 1.3f, 0.f, false);
 		Blade(X0 + 1250.f, H, 2.8f, 0.25f, true);
 		GoldLessonCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
@@ -343,13 +344,13 @@ void AFreezeGameMode::BuildCourse()
 		};
 		// Up the south side, back along the north side, then a long ride to the exit
 		Ledge(X0 + 400.f, -250.f, 200.f, 200.f, 200.f);
-		Lift(X0 + 700.f, -250.f, 200.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 4.f, 0.f);
+		Lift(X0 + 700.f, -250.f, 200.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 3.f, 0.f);
 		Ledge(X0 + 1000.f, -250.f, 500.f, 200.f, 200.f);
-		Lift(X0 + 1150.f, -250.f, 700.f, 200.f, 160.f, FVector(300.f, 0.f, 0.f), 4.f, 0.25f);
+		Lift(X0 + 1150.f, -250.f, 700.f, 200.f, 160.f, FVector(300.f, 0.f, 0.f), 3.f, 0.25f);
 		Ledge(X0 + 1450.f, 250.f, 850.f, 200.f, 400.f);
-		Lift(X0 + 1150.f, 250.f, 850.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 4.f, 0.5f);
+		Lift(X0 + 1150.f, 250.f, 850.f, 200.f, 200.f, FVector(0.f, 0.f, 300.f), 3.f, 0.5f);
 		Ledge(X0 + 850.f, 250.f, 1150.f, 200.f, 200.f);
-		Lift(X0 + 600.f, 250.f, 1300.f, 200.f, 200.f, FVector(-300.f, 0.f, 0.f), 4.f, 0.f);
+		Lift(X0 + 600.f, 250.f, 1300.f, 200.f, 200.f, FVector(-300.f, 0.f, 0.f), 3.f, 0.f);
 		Ledge(X0 + 150.f, 0.f, 1350.f, 200.f, 600.f);
 		Lift(X0 + 400.f, -250.f, 1400.f, 300.f, 200.f, FVector(900.f, 0.f, 0.f), 7.f, 0.f);
 		Ledge(X0 + 1500.f, -150.f, 1400.f, 200.f, 500.f);
@@ -371,7 +372,7 @@ void AFreezeGameMode::BuildCourse()
 		Block(FVector(X0 + 700.f, 350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
 		Block(FVector(X0 + 700.f, -350.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
 		Block(FVector(X0 + 1350.f, 0.f, H + 200.f), FVector(200.f, 200.f, 400.f), FreezeColors::Wall);
-		SpawnSentinel(FVector(X0 + 1100.f, 0.f, H + 100.f), FVector2D(X0 + 50.f, -680.f), FVector2D(X0 + 1950.f, 680.f), 380.f, 1400.f, false);
+		SpawnSentinel(FVector(X0 + 1100.f, 0.f, H + 100.f), FVector2D(X0 + 50.f, -680.f), FVector2D(X0 + 1950.f, 680.f), 450.f, 1600.f, false);
 		SpawnHourglass(FVector(X0 + 1750.f, 550.f, H + 80.f));
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 100.f, 0.f, H + 100.f),
 			TEXT("A Guard guards this hall. If it touches you, you're sent back. Frozen, it's just a statue."), X0 + 2000.f);
@@ -387,7 +388,7 @@ void AFreezeGameMode::BuildCourse()
 
 		// The bow, waiting on a little stand
 		Block(FVector(X0 + 250.f, 0.f, H + 40.f), FVector(80.f, 80.f, 80.f), FreezeColors::Stone);
-		BowPickup = Block(FVector(X0 + 250.f, 0.f, H + 130.f), FVector(12.f, 12.f, 110.f), FLinearColor(0.45f, 0.25f, 0.1f), EGeoShape::Cylinder);
+		BowPickup = GetWorld()->SpawnActor<ABowModel>(ABowModel::StaticClass(), W(FVector(X0 + 250.f, 0.f, H + 140.f)), FRotator::ZeroRotator);
 		BowSpot = FVector(X0 + 250.f, 0.f, H + 100.f);
 
 		// Two targets darting across the back wall, too fast to hit unless frozen
@@ -407,8 +408,9 @@ void AFreezeGameMode::BuildCourse()
 		}
 		Gates.Add(Block(FVector(X0 + 1400.f, 0.f, H + 250.f), FVector(60.f, 1400.f, 500.f), FreezeColors::Danger));
 		RangeCheckpoint = Checkpoints.Num();
+		SpotlightCheckpoint = RangeCheckpoint;
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
-			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Press F to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
+			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Left-click or press F to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
 	}
 
 	// --- 8. Archery arena: three Sentinels -----------------------------------
@@ -420,7 +422,7 @@ void AFreezeGameMode::BuildCourse()
 		Block(FVector(X0 + 900.f, -350.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
 		for (float SY : { -500.f, 0.f, 500.f })
 		{
-			if (ASentinel* S = SpawnSentinel(FVector(X0 + 1550.f, SY, H + 100.f), FVector2D(X0 + 50.f, -780.f), FVector2D(X0 + 1750.f, 780.f), 330.f, 2500.f, false))
+			if (ASentinel* S = SpawnSentinel(FVector(X0 + 1550.f, SY, H + 100.f), FVector2D(X0 + 50.f, -780.f), FVector2D(X0 + 1750.f, 780.f), 400.f, 2500.f, false))
 			{
 				S->bArena = true;
 			}
@@ -446,12 +448,12 @@ void AFreezeGameMode::BuildCourse()
 				M.Size = FVector(200.f, 350.f, 400.f);
 				M.OffsetA = FVector::ZeroVector;
 				M.OffsetB = FVector(0.f, -350.f * Side, 0.f);
-				M.Period = 3.2f;
+				M.Period = 2.4f;
 				M.Color = FreezeColors::Danger;
 				M.HitMessage = TEXT("Crushed!");
 			});
 		}
-		SpawnSentinel(FVector(X0 + 750.f, 0.f, H + 100.f), FVector2D(X0 + 520.f, -340.f), FVector2D(X0 + 2000.f, 340.f), 360.f, 1200.f, false);
+		SpawnSentinel(FVector(X0 + 750.f, 0.f, H + 100.f), FVector2D(X0 + 520.f, -340.f), FVector2D(X0 + 2000.f, 340.f), 440.f, 1400.f, false);
 
 		// Crumbling floor: each tile drops shortly after you step on it
 		for (float TX = X0 + 900.f; TX < X0 + 2000.f; TX += 200.f)
@@ -463,7 +465,7 @@ void AFreezeGameMode::BuildCourse()
 		}
 		Blade(X0 + 1500.f, H, 2.8f, 0.f, true);
 
-		Bridge(X0 + 2600.f, H, 700.f, 8.f, 0.3f);
+		Bridge(X0 + 2600.f, H, 700.f, 6.f, 0.3f);
 		Floor(X0 + 3200.f, X0 + 3600.f, -350.f, 350.f, H);
 		SpawnHourglass(FVector(X0 + 3450.f, 0.f, H + 80.f));
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 100.f, 0.f, H + 100.f),
@@ -595,7 +597,8 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 
 	if (UCharacterMovementComponent* Move = Player->GetCharacterMovement())
 	{
-		Move->JumpZVelocity = 700.f;
+		Move->JumpZVelocity = 910.f;
+		Move->GravityScale = 1.8f;	// falls back down faster; jump is a little lower than before
 		Move->AirControl = 0.6f;
 		Move->MaxWalkSpeed = 550.f;
 	}
@@ -607,6 +610,7 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 		{
 			InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AFreezeGameMode::OnFreezePressed);
 			InputComponent->BindKey(EKeys::X, IE_Pressed, this, &AFreezeGameMode::OnCloseHint);
+			InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &AFreezeGameMode::OnShootPressed);
 			InputComponent->BindKey(EKeys::F, IE_Pressed, this, &AFreezeGameMode::OnShootPressed);
 #if WITH_EDITOR
 			// Testing only (not in builds): N jumps to the next checkpoint, B to the previous one
@@ -1152,6 +1156,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
+	HintSpotlightLeft = FMath::Max(0.f, HintSpotlightLeft - DeltaSeconds);
 	if (bHasBow)
 	{
 		FVector Ignored;
@@ -1176,7 +1181,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 			BowPickup->SetActorEnableCollision(false);
 			BowPickup->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("hand_l"));
 		}
-		AddMessage(TEXT("You got the bow! Press F to shoot."), FreezeColors::Gold);
+		AddMessage(TEXT("You got the bow! Left-click or press F to shoot."), FreezeColors::Gold);
 	}
 
 	// The clock stops while time is frozen; the freeze is paid for up front
@@ -1211,6 +1216,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 		if (LocalX > Checkpoints[i].TriggerX && bHighEnough)
 		{
 			CurrentCheckpoint = i;
+			if (i == SpotlightCheckpoint) HintSpotlightLeft = 2.f;
 			HintText = Checkpoints[i].Hint;
 			HintEndX = Checkpoints[i].HintEndX;
 			AddMessage(TEXT("Checkpoint"), FreezeColors::Ice);

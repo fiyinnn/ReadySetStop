@@ -19,7 +19,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	FVector Target = FVector::ZeroVector;
-	float Speed = 6000.f;
+	float Speed = 3500.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -27,5 +27,6 @@ protected:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> Root;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Shaft;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Tip;
+	UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Feathers;
 	UPROPERTY() TObjectPtr<UMaterialInterface> BaseMaterial;
 };

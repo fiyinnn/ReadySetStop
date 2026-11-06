@@ -86,6 +86,7 @@ public:
 	int32 Freezes = 0;
 	bool bHasBow = false;
 	bool bAimOnTarget = false;	// crosshair turns red
+	float HintSpotlightLeft = 0.f;	// > 0: tip shown big in the middle of the screen
 	int32 Hits = 0;
 	float PlaySeconds = 0.f;
 
@@ -140,6 +141,7 @@ protected:
 	float InvulnerableLeft = 0.f;
 	int32 GoldLessonCheckpoint = -1;
 	int32 RangeCheckpoint = 1000;
+	int32 SpotlightCheckpoint = -1;
 	int32 ArenaCheckpoint = 1000;
 	int32 BossCheckpoint = 1000;
 	TMap<int32, int32> GoldWarningsShown;
@@ -153,7 +155,7 @@ protected:
 	UPROPERTY() TArray<TWeakObjectPtr<AActor>> Freezables;
 	UPROPERTY() TObjectPtr<APostProcessVolume> FreezeLook;
 	UPROPERTY() TObjectPtr<AGeoBlock> Gate;
-	UPROPERTY() TObjectPtr<AGeoBlock> BowPickup;
+	UPROPERTY() TObjectPtr<AActor> BowPickup;
 	UPROPERTY() TMap<FName, TObjectPtr<class USoundBase>> SoundCache;
 	UPROPERTY() TObjectPtr<class UAudioComponent> Music;
 	UPROPERTY() TObjectPtr<class UAudioComponent> TickLoop;

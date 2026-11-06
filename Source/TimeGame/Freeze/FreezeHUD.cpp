@@ -99,7 +99,7 @@ void AFreezeHUD::DrawHUD()
 			TEXT("Mouse   look and aim"),
 			TEXT("Space   jump"),
 			TEXT("E   freeze time (press again to unfreeze)"),
-			TEXT("F   shoot, once you find the bow"),
+			TEXT("Left-click or F   shoot, once you find the bow"),
 			TEXT("X   hide tips") };
 		for (const TCHAR* Line : Lines)
 		{
@@ -166,8 +166,18 @@ void AFreezeHUD::DrawHUD()
 		float LW = 0.f, LH = 0.f;
 		GetTextSize(TEXT("Ag"), LW, LH, Small, TextScale);
 		const float H = Pad * 2.f + 26.f * UI + Lines.Num() * LH + 22.f * UI;
-		const float X = Margin, Y = Margin;
-		TipBottom = Y + H + 12.f * UI;
+		float X = Margin, Y = Margin;
+		if (GM->HintSpotlightLeft > 0.f)
+		{
+			// New idea: show the tip in the middle of the screen first, then it moves to the top left
+			X = (SW - W) * 0.5f;
+			Y = SH * 0.3f;
+			DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.35f), 0.f, 0.f, SW, SH);
+		}
+		else
+		{
+			TipBottom = Y + H + 12.f * UI;
+		}
 
 		DrawPanel(X, Y, W, H, PanelColor);
 		DrawText(TEXT("TIP"), FLinearColor(0.75f, 0.8f, 0.9f), X + Pad, Y + Pad, Small, 1.0f * UI);
