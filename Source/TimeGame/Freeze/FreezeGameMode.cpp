@@ -159,10 +159,11 @@ ASentinel* AFreezeGameMode::SpawnSentinel(const FVector& Location, const FVector
 	return S;
 }
 
-void AFreezeGameMode::AddCheckpoint(float TriggerX, const FVector& Spawn, const FString& Hint, float InHintEndX)
+void AFreezeGameMode::AddCheckpoint(float TriggerX, const FVector& Spawn, const FString& Hint, float InHintEndX, float TriggerZ)
 {
 	FCourseCheckpoint C;
 	C.TriggerX = TriggerX;
+	C.TriggerZ = TriggerZ;
 	C.Spawn = Spawn;
 	C.Hint = Hint;
 	C.HintEndX = InHintEndX;
@@ -551,29 +552,30 @@ void AFreezeGameMode::BuildCourse()
 		// Climb the tower's side on ledges and moving platforms to reach the bell
 		auto Ledge = [&](float DX, float Y, float Top)
 		{
-			Block(FVector(TX + DX, Y, H + Top - 20.f), FVector(200.f, 160.f, 40.f), Wood);
+			Block(FVector(TX + DX, Y, H + Top - 20.f), FVector(300.f, 240.f, 40.f), Wood);
 		};
 		auto Lift = [&](float DX, float Y, float Top, const FVector& Travel, float Period)
 		{
 			MakeMover(FVector(TX + DX, Y, H + Top - 20.f), [&](ATimeMover& M)
 			{
 				M.Mode = ETimeMoveMode::PingPong;
-				M.Size = FVector(200.f, 160.f, 40.f);
+				M.Size = FVector(300.f, 240.f, 40.f);
 				M.OffsetA = FVector::ZeroVector;
 				M.OffsetB = Travel;
 				M.Period = Period;
 				M.Color = FreezeColors::Platform;
 			});
 		};
-		Ledge(-230.f, -400.f, 200.f);
-		Lift(0.f, -400.f, 200.f, FVector(0.f, 0.f, 350.f), 4.f);
-		Ledge(230.f, -400.f, 550.f);
-		Lift(230.f, -620.f, 750.f, FVector(-460.f, 0.f, 0.f), 5.f);
-		Ledge(-230.f, -400.f, 950.f);
-		Lift(0.f, -620.f, 1000.f, FVector(0.f, 0.f, 350.f), 4.f);
-		Ledge(100.f, -400.f, 1450.f);
+		Ledge(-320.f, -430.f, 200.f);
+		Lift(0.f, -430.f, 200.f, FVector(0.f, 0.f, 350.f), 4.f);
+		Ledge(320.f, -430.f, 550.f);
+		Lift(320.f, -680.f, 750.f, FVector(-640.f, 0.f, 0.f), 6.f);
+		Ledge(-320.f, -430.f, 950.f);
+		Lift(0.f, -680.f, 1000.f, FVector(0.f, 0.f, 350.f), 4.f);
+		Ledge(100.f, -430.f, 1450.f);
 		AddCheckpoint(21450.f, FVector(21500.f, 0.f, H + 100.f),
 			TEXT("Climb the tower's side and ring the bell at the top. Freeze the blue platforms to make the jumps easier."), 0.f);
+		AddCheckpoint(21450.f, FVector(TX - 320.f, -430.f, H + 1050.f), TEXT("Halfway up! A fall now only sends you back here."), 0.f, H + 900.f);
 
 		BellRope = FVector(TX, 0.f, H + 1890.f);	// the bell in the belfry
 	}
@@ -1205,7 +1207,8 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 
 	for (int32 i = Checkpoints.Num() - 1; i > CurrentCheckpoint; --i)
 	{
-		if (LocalX > Checkpoints[i].TriggerX)
+		const bool bHighEnough = Checkpoints[i].TriggerZ <= -1e5f || Loc.Z - CourseOrigin.Z > Checkpoints[i].TriggerZ;
+		if (LocalX > Checkpoints[i].TriggerX && bHighEnough)
 		{
 			CurrentCheckpoint = i;
 			HintText = Checkpoints[i].Hint;

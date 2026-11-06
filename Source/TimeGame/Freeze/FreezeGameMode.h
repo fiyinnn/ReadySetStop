@@ -29,6 +29,7 @@ enum class EFreezeState : uint8 { Title, Playing, Won, Lost };
 struct FCourseCheckpoint
 {
 	float TriggerX = 0.f;	// reached when the player walks past this X
+	float TriggerZ = -1e6f;	// ...and, if set, climbs above this height
 	FVector Spawn = FVector::ZeroVector;
 	FString Hint;			// empty = no tip for this section
 	float HintEndX = 0.f;	// tip disappears once the player passes this X
@@ -126,7 +127,7 @@ protected:
 	void SideWalls(float X0, float X1, float HalfWidth, float Height, float Top = 0.f);
 	class AHourglass* SpawnHourglass(const FVector& Location, float Bonus = 20.f);
 	ASentinel* SpawnSentinel(const FVector& Location, const FVector2D& AreaMin, const FVector2D& AreaMax, float Speed, float ChaseRadius, bool bBoss);
-	void AddCheckpoint(float TriggerX, const FVector& Spawn, const FString& Hint, float HintEndX);
+	void AddCheckpoint(float TriggerX, const FVector& Spawn, const FString& Hint, float HintEndX, float TriggerZ = -1e6f);
 	FVector W(const FVector& Local) const { return CourseOrigin + Local; }
 
 	FVector CourseOrigin = FVector(0.f, 0.f, 2000.f);
