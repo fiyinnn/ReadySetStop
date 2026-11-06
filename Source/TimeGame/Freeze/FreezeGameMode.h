@@ -108,6 +108,9 @@ protected:
 	void OnCloseHint();
 	void OnRestartPressed();
 	void OnShootPressed();
+	void DebugNextCheckpoint();
+	void DebugPreviousCheckpoint();
+	void DebugJumpTo(int32 Index);
 	AActor* FindAimTarget(FVector& OutHitPoint) const;
 	void UpdateArrowKeys(ACharacter* Player);
 	void OpenGate(int32 Index, const FString& Message);
@@ -130,6 +133,9 @@ protected:
 	float HintEndX = 0.f;
 	float InvulnerableLeft = 0.f;
 	int32 GoldLessonCheckpoint = -1;
+	int32 RangeCheckpoint = 1000;
+	int32 ArenaCheckpoint = 1000;
+	int32 BossCheckpoint = 1000;
 	TMap<int32, int32> GoldWarningsShown;
 	int32 TargetsHit = 0;
 	int32 ArenaDefeated = 0;

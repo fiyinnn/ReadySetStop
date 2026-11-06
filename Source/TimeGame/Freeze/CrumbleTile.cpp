@@ -30,7 +30,7 @@ void ACrumbleTile::BeginPlay()
 	if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-		Mat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.62f, 0.5f, 0.33f));
+		Mat->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.55f, 0.3f, 0.24f));
 		Mesh->SetMaterial(0, Mat);
 	}
 

@@ -155,7 +155,8 @@ void AFreezeHUD::DrawHUD()
 		DrawRect(C, CX - T * 0.5f, CY - L, T, L * 2.f);
 	}
 
-	// --- Tip panel ---
+	// --- Tip panel (top left); red warnings stack just under it ---
+	float TipBottom = Margin;
 	if (!GM->HintText.IsEmpty() && GM->IsPlaying())
 	{
 		const float W = 380.f * UI;
@@ -165,7 +166,8 @@ void AFreezeHUD::DrawHUD()
 		float LW = 0.f, LH = 0.f;
 		GetTextSize(TEXT("Ag"), LW, LH, Small, TextScale);
 		const float H = Pad * 2.f + 26.f * UI + Lines.Num() * LH + 22.f * UI;
-		const float X = Margin, Y = SH - Margin - H;
+		const float X = Margin, Y = Margin;
+		TipBottom = Y + H + 12.f * UI;
 
 		DrawPanel(X, Y, W, H, PanelColor);
 		DrawText(TEXT("TIP"), FLinearColor(0.75f, 0.8f, 0.9f), X + Pad, Y + Pad, Small, 1.0f * UI);
@@ -179,7 +181,7 @@ void AFreezeHUD::DrawHUD()
 	// --- Messages under the clock; red warnings in the top left ---
 	{
 		float Y = Margin + 112.f * UI;
-		float WarnY = Margin;
+		float WarnY = TipBottom;
 		for (int32 i = 0; i < GM->Messages.Num(); ++i)
 		{
 			const FFreezeMessage& M = GM->Messages[i];
