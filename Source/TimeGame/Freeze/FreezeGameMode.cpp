@@ -9,6 +9,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/InputComponent.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/SkyLightComponent.h"
@@ -807,13 +808,24 @@ void AFreezeGameMode::ShowGoldWarning(const FString& Text)
 	AddWarning(Text);
 }
 
-void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
+void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume, float MaxSeconds)
 {
-	if (USoundBase* Sound = FindSound(Name))
+	USoundBase* Sound = FindSound(Name);
+	if (!Sound) return;
+
+	// One-off sounds are cut short (with a quick fade) if the file is longer than the moment needs
+	const float Length = FMath::Min(Sound->GetDuration(), MaxSeconds);
+	UAudioComponent* Voice = UGameplayStatics::SpawnSound2D(this, Sound, Volume);
+	if (Voice && Sound->GetDuration() > MaxSeconds)
 	{
-		UGameplayStatics::PlaySound2D(this, Sound, Volume);
-		DuckMusicFor(Sound->GetDuration());
+		TWeakObjectPtr<UAudioComponent> WeakVoice(Voice);
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([WeakVoice]()
+		{
+			if (WeakVoice.IsValid()) WeakVoice->FadeOut(0.25f, 0.f);
+		}), MaxSeconds, false);
 	}
+	DuckMusicFor(Length);
 }
 
 void AFreezeGameMode::DuckMusicFor(float Seconds)
@@ -1031,7 +1043,7 @@ void AFreezeGameMode::OnShootPressed()
 		Player->SetActorRotation(FRotator(0.f, C->GetControlRotation().Yaw, 0.f));
 	}
 	const FVector Muzzle = Player->GetMesh() ? Player->GetMesh()->GetSocketLocation(TEXT("hand_l")) : Player->GetActorLocation() + FVector(0.f, 0.f, 50.f);
-	PlaySfx(TEXT("SFX_BowShoot"));
+	PlaySfx(TEXT("SFX_BowShoot"), 1.f, 0.8f);
 	if ((HitPoint - Muzzle).Size() > 10.f)
 	{
 		const FTransform T(Muzzle);
@@ -1048,7 +1060,7 @@ void AFreezeGameMode::OnShootPressed()
 		return;
 	}
 
-	PlaySfx(TEXT("SFX_ArrowHit"));
+	PlaySfx(TEXT("SFX_ArrowHit"), 1.f, 0.8f);
 	if (ASentinel* S = Cast<ASentinel>(HitActor))
 	{
 		if (S->bBoss)
@@ -1098,7 +1110,7 @@ void AFreezeGameMode::Lose()
 {
 	State = EFreezeState::Lost;
 	StopTicking();
-	PlaySfx(TEXT("SFX_GameOver"));
+	PlaySfx(TEXT("SFX_GameOver"), 1.f, 5.f);
 	if (Music) Music->FadeOut(1.f, 0.f);
 	SetFrozen(false);
 	HintText.Empty();
@@ -1126,6 +1138,11 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	PlaySeconds += DeltaSeconds;
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
+	if (bHasBow)
+	{
+		FVector Ignored;
+		bAimOnTarget = FindAimTarget(Ignored) != nullptr;	// crosshair turns red on a target
+	}
 	if (Music && !bFrozen && !Music->IsPlaying()) Music->Play();
 	if (bMusicDucked && Music && GetWorld()->GetTimeSeconds() >= MusicDuckedUntil && !(TickLoop && TickLoop->IsPlaying()))
 	{
@@ -1201,7 +1218,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	if (FVector::Dist(Loc, W(BellRope)) < 280.f)
 	{
 		AddMessage(TEXT("DONG!"), FreezeColors::Gold);
-		PlaySfx(TEXT("SFX_Bell"));
+		PlaySfx(TEXT("SFX_Bell"), 1.f, 6.f);
 		Win();
 	}
 }

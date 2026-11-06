@@ -93,7 +93,7 @@ public:
 	void ShowGoldWarning(const FString& Text);
 
 	/** Plays /Game/Audio/<Name> if that sound has been imported; silently does nothing otherwise. */
-	void PlaySfx(const TCHAR* Name, float Volume = 1.f);
+	void PlaySfx(const TCHAR* Name, float Volume = 1.f, float MaxSeconds = 2.f);
 	class USoundBase* FindSound(const TCHAR* Name);
 
 protected:
