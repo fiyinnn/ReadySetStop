@@ -610,6 +610,7 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 			// Testing only (not in builds): N jumps to the next checkpoint, B to the previous one
 			InputComponent->BindKey(EKeys::N, IE_Pressed, this, &AFreezeGameMode::DebugNextCheckpoint);
 			InputComponent->BindKey(EKeys::B, IE_Pressed, this, &AFreezeGameMode::DebugPreviousCheckpoint);
+			InputComponent->BindKey(EKeys::RightBracket, IE_Pressed, this, &AFreezeGameMode::DebugRingBell);
 			{
 				// 1-9 = sections 1-9, 0 = 10, minus = 11, equals = 12
 				const FKey SectionKeys[] = { EKeys::One, EKeys::Two, EKeys::Three, EKeys::Four, EKeys::Five, EKeys::Six,
@@ -709,6 +710,17 @@ void AFreezeGameMode::OnFreezePressed()
 
 void AFreezeGameMode::DebugNextCheckpoint() { DebugJumpTo(CurrentCheckpoint + 1); }
 void AFreezeGameMode::DebugPreviousCheckpoint() { DebugJumpTo(CurrentCheckpoint - 1); }
+
+void AFreezeGameMode::DebugRingBell()
+{
+	// Testing only: drop the player beside the bell, which rings and wins
+	if (!IsPlaying()) return;
+	DebugJumpTo(Checkpoints.Num() - 1);
+	if (ACharacter* Player = GetPlayerCharacter())
+	{
+		Player->SetActorLocation(W(BellRope) + FVector(0.f, -150.f, -150.f), false, nullptr, ETeleportType::TeleportPhysics);
+	}
+}
 
 void AFreezeGameMode::DebugJumpTo(int32 Index)
 {

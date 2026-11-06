@@ -112,6 +112,7 @@ protected:
 	void DebugNextCheckpoint();
 	void DebugPreviousCheckpoint();
 	void DebugJumpTo(int32 Index);
+	void DebugRingBell();
 	void UpdateLowTimeTicking();
 	void StopTicking();
 	void DuckMusicFor(float Seconds);
