@@ -173,7 +173,9 @@ void ATimeMover::Tick(float DeltaSeconds)
 	if (bCrushesSentinels && bWasDangerous && !bDangerous)
 	{
 		ACharacter* Listener = GM->GetPlayerCharacter();
-		if (Listener && FVector::Dist(Listener->GetActorLocation(), GetActorLocation()) < 3000.f)
+		// Only heard inside the press's own room, not once you're out at the clock tower
+		const FVector Rel = Listener ? Listener->GetActorLocation() - GetActorLocation() : FVector(1e6f);
+		if (Listener && FMath::Abs(Rel.X) < 980.f && FMath::Abs(Rel.Y) < 900.f)
 		{
 			GM->PlaySfx(TEXT("SFX_Slam"), 0.8f);
 		}
