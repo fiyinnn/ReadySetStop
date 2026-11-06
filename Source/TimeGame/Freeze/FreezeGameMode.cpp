@@ -1211,7 +1211,6 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 			HintText = Checkpoints[i].Hint;
 			HintEndX = Checkpoints[i].HintEndX;
 			AddMessage(TEXT("Checkpoint"), FreezeColors::Ice);
-			PlaySfx(TEXT("SFX_Checkpoint"), 0.6f);
 			break;
 		}
 	}
