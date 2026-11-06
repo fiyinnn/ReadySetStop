@@ -131,9 +131,25 @@ void ASentinel::Tick(float DeltaSeconds)
 	}
 }
 
+bool ASentinel::TakeArrow(bool bTimeFrozen)
+{
+	if (bDefeated) return false;
+	ArrowHits++;
+	if (!bArena || bTimeFrozen || ArrowHits >= 2)
+	{
+		Defeat();
+		return true;
+	}
+	// Wounded: the glow dims so you can see which one needs a second arrow
+	Glow->SetIntensity(1500.f);
+	return false;
+}
+
 void ASentinel::ResetToHome()
 {
 	if (bDefeated) return;
+	ArrowHits = 0;
+	Glow->SetIntensity(6000.f);
 	SetActorLocation(Home, false, nullptr, ETeleportType::TeleportPhysics);
 	GetCharacterMovement()->StopMovementImmediately();
 }

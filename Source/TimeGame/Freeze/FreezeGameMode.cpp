@@ -420,17 +420,26 @@ void AFreezeGameMode::BuildCourse()
 		SideWalls(X0, X0 + 1800.f, 800.f, 500.f, H);
 		Block(FVector(X0 + 600.f, 400.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
 		Block(FVector(X0 + 900.f, -350.f, H + 150.f), FVector(150.f, 150.f, 300.f), FreezeColors::Wall);
-		for (float SY : { -500.f, 0.f, 500.f })
+		// Four Guards: three fast ones at the back, a slower fourth from the far corner so they don't all arrive at once
+		struct FArenaGuard { FVector Spot; float Speed; };
+		const FArenaGuard ArenaGuards[] = {
+			{ FVector(X0 + 1550.f, -500.f, H + 100.f), 450.f },
+			{ FVector(X0 + 1550.f,    0.f, H + 100.f), 450.f },
+			{ FVector(X0 + 1550.f,  500.f, H + 100.f), 450.f },
+			{ FVector(X0 + 1700.f,  700.f, H + 100.f), 350.f },
+		};
+		for (const FArenaGuard& G : ArenaGuards)
 		{
-			if (ASentinel* S = SpawnSentinel(FVector(X0 + 1550.f, SY, H + 100.f), FVector2D(X0 + 50.f, -780.f), FVector2D(X0 + 1750.f, 780.f), 400.f, 2500.f, false))
+			if (ASentinel* S = SpawnSentinel(G.Spot, FVector2D(X0 + 50.f, -780.f), FVector2D(X0 + 1750.f, 780.f), G.Speed, 2500.f, false))
 			{
 				S->bArena = true;
+				ArenaGuardCount++;
 			}
 		}
 		Gates.Add(Block(FVector(X0 + 1800.f, 0.f, H + 250.f), FVector(60.f, 1600.f, 500.f), FreezeColors::Danger));
 		ArenaCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
-			TEXT("Shoot all three Guards to open the gate. Frozen Guards make easy targets."), X0 + 1800.f);
+			TEXT("Shoot all four Guards to open the gate. A moving Guard takes two arrows, but a frozen Guard goes down in one."), X0 + 1800.f);
 	}
 
 	// --- 9. Everything together: crushers, crumbling floor, bridge -----------
@@ -973,8 +982,8 @@ void AFreezeGameMode::OnSentinelDefeated(ASentinel* Sentinel)
 	if (Sentinel->bArena)
 	{
 		ArenaDefeated++;
-		AddMessage(FString::Printf(TEXT("Guard down! %d of 3"), ArenaDefeated), FreezeColors::Gold);
-		if (ArenaDefeated >= 3) OpenGate(1, TEXT("All three Guards are down. The gate is open!"));
+		AddMessage(FString::Printf(TEXT("Guard down! %d of %d"), ArenaDefeated, ArenaGuardCount), FreezeColors::Gold);
+		if (ArenaDefeated >= ArenaGuardCount) OpenGate(1, TEXT("All the Guards are down. The gate is open!"));
 		return;
 	}
 
@@ -1050,7 +1059,7 @@ void AFreezeGameMode::OnShootPressed()
 
 	ACharacter* Player = GetPlayerCharacter();
 	if (!Player) return;
-	ShotCooldown = 0.35f;
+	ShotCooldown = 0.6f;	// a short reload, so you can't spray arrows
 
 	FVector HitPoint;
 	AActor* HitActor = FindAimTarget(HitPoint);
@@ -1085,9 +1094,9 @@ void AFreezeGameMode::OnShootPressed()
 		{
 			AddMessage(TEXT("Arrows bounce off its gold armour!"), FreezeColors::Gold);
 		}
-		else
+		else if (!S->TakeArrow(IsFrozen()))
 		{
-			S->Defeat();
+			AddMessage(TEXT("Hit! One more arrow, or freeze it to finish it."), FreezeColors::Gold);
 		}
 		return;
 	}

@@ -26,7 +26,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sentinel") float ChaseRadius = 1400.f;
 	UPROPERTY(EditAnywhere, Category = "Sentinel") float Speed = 380.f;
 	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bBoss = false;	// gold armour: arrows bounce off
-	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bArena = false;	// one of the three in the archery arena
+	UPROPERTY(EditAnywhere, Category = "Sentinel") bool bArena = false;	// one of the Guards in the archery arena
+
+	/** Arena Guards take two arrows while moving, one while frozen. Returns true if this arrow finished it. */
+	bool TakeArrow(bool bTimeFrozen);
 
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -45,4 +48,5 @@ protected:
 
 	FVector Home;
 	bool bDefeated = false;
+	int32 ArrowHits = 0;
 };

@@ -147,6 +147,7 @@ protected:
 	TMap<int32, int32> GoldWarningsShown;
 	int32 TargetsHit = 0;
 	int32 ArenaDefeated = 0;
+	int32 ArenaGuardCount = 0;
 	float ShotCooldown = 0.f;
 	FVector BowSpot = FVector::ZeroVector;
 
