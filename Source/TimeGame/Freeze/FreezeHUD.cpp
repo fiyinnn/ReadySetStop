@@ -99,7 +99,7 @@ void AFreezeHUD::DrawHUD()
 			TEXT("Mouse   look and aim"),
 			TEXT("Space   jump"),
 			TEXT("E   freeze time (press again to unfreeze)"),
-			TEXT("Left-click   shoot, once you find the bow"),
+			TEXT("Left-click or F   shoot, once you find the bow"),
 			TEXT("X   hide tips") };
 		for (const TCHAR* Line : Lines)
 		{

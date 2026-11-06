@@ -410,7 +410,7 @@ void AFreezeGameMode::BuildCourse()
 		RangeCheckpoint = Checkpoints.Num();
 		SpotlightCheckpoint = RangeCheckpoint;
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
-			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Left-click to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
+			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Left-click or press F to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
 	}
 
 	// --- 8. Archery arena: three Sentinels -----------------------------------
@@ -1181,7 +1181,7 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 			BowPickup->SetActorEnableCollision(false);
 			BowPickup->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("hand_l"));
 		}
-		AddMessage(TEXT("You got the bow! Left-click to shoot."), FreezeColors::Gold);
+		AddMessage(TEXT("You got the bow! Left-click or press F to shoot."), FreezeColors::Gold);
 	}
 
 	// The clock stops while time is frozen; the freeze is paid for up front
