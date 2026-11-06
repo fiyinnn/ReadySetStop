@@ -22,6 +22,16 @@ ABowModel::ABowModel()
 	WoodParts.Add(AddPart(TEXT("UpperTip"), FVector(-16.f, 0.f, 46.f), FRotator(-40.f, 0.f, 0.f), FVector(0.035f, 0.035f, 0.1f)));
 	WoodParts.Add(AddPart(TEXT("LowerTip"), FVector(-16.f, 0.f, -46.f), FRotator(40.f, 0.f, 0.f), FVector(0.035f, 0.035f, 0.1f)));
 	String = AddPart(TEXT("String"), FVector(-19.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.008f, 0.008f, 0.96f));
+
+	// "Cool Bow" by lncg5764 (Fab). If it is missing, the simple shape bow above is used instead.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> BowFinder(TEXT("/Game/Fab/Cool_Bow/cool_bow/StaticMeshes/cool_bow.cool_bow"));
+	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
+	Model->SetupAttachment(Root);
+	Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (BowFinder.Succeeded())
+	{
+		Model->SetStaticMesh(BowFinder.Object);
+	}
 }
 
 UStaticMeshComponent* ABowModel::AddPart(const TCHAR* Name, const FVector& Location, const FRotator& Rotation, const FVector& Scale)
@@ -40,6 +50,24 @@ UStaticMeshComponent* ABowModel::AddPart(const TCHAR* Name, const FVector& Locat
 void ABowModel::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Model && Model->GetStaticMesh())
+	{
+		// Use the real model: size it to about 110 cm tall and hide the stand-in shapes
+		const FVector Extent = Model->GetStaticMesh()->GetBounds().BoxExtent;
+		const float Longest = FMath::Max3(Extent.X, Extent.Y, Extent.Z) * 2.f;
+		if (Longest > KINDA_SMALL_NUMBER)
+		{
+			Model->SetRelativeScale3D(FVector(110.f / Longest));
+		}
+		for (UStaticMeshComponent* Part : WoodParts)
+		{
+			if (Part) Part->SetVisibility(false);
+		}
+		if (String) String->SetVisibility(false);
+		return;
+	}
+	if (Model) Model->SetVisibility(false);
 	if (!BaseMaterial) return;
 
 	UMaterialInstanceDynamic* Wood = UMaterialInstanceDynamic::Create(BaseMaterial, this);

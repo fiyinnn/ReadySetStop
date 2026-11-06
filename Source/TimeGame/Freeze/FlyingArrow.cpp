@@ -33,6 +33,16 @@ AFlyingArrow::AFlyingArrow()
 	Tip->SetRelativeScale3D(FVector(0.09f, 0.03f, 0.16f));	// a flat, pointed arrowhead
 	Tip->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	// "Historic Medieval Weapon Arrow Wood 01" by Quixel Megascans (Fab). If missing, the shapes below are used.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> ArrowFinder(TEXT("/Game/Fab/Megascans/3D/Historic_Medieval_Weapon_Arrow_Wood_01_xjthdfs/High/SM_xjthdfs_tier_1/StaticMeshes/SM_xjthdfs_tier_1.SM_xjthdfs_tier_1"));
+	Model = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Model"));
+	Model->SetupAttachment(Root);
+	Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (ArrowFinder.Succeeded())
+	{
+		Model->SetStaticMesh(ArrowFinder.Object);
+	}
+
 	// Three feathers (fletching) at the back, spaced around the shaft
 	const TCHAR* FeatherNames[] = { TEXT("Feather0"), TEXT("Feather1"), TEXT("Feather2") };
 	for (int32 i = 0; i < 3; ++i)
@@ -51,6 +61,32 @@ AFlyingArrow::AFlyingArrow()
 void AFlyingArrow::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Model && Model->GetStaticMesh())
+	{
+		// Real arrow: turn its long side to point forward (+X), size it to about 100 cm, hide the stand-in shapes
+		const FVector Extent = Model->GetStaticMesh()->GetBounds().BoxExtent;
+		FRotator Turn = FRotator::ZeroRotator;
+		float Longest = Extent.X;
+		if (Extent.Y > Longest) { Longest = Extent.Y; Turn = FRotator(0.f, -90.f, 0.f); }
+		if (Extent.Z > Longest) { Longest = Extent.Z; Turn = FRotator(-90.f, 0.f, 0.f); }
+		if (bFlipModel) Turn += FRotator(0.f, 180.f, 0.f);
+		Model->SetRelativeRotation(Turn);
+		if (Longest > KINDA_SMALL_NUMBER)
+		{
+			Model->SetRelativeScale3D(FVector(100.f / (Longest * 2.f)));
+		}
+		Shaft->SetVisibility(false);
+		Tip->SetVisibility(false);
+		for (UStaticMeshComponent* Feather : Feathers)
+		{
+			if (Feather) Feather->SetVisibility(false);
+		}
+		SetActorRotation((Target - GetActorLocation()).Rotation());
+		SetLifeSpan(2.f);
+		return;
+	}
+	if (Model) Model->SetVisibility(false);
 	if (BaseMaterial)
 	{
 		UMaterialInstanceDynamic* Wood = UMaterialInstanceDynamic::Create(BaseMaterial, this);

@@ -24,5 +24,6 @@ protected:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<USceneComponent> Root;
 	UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> WoodParts;
 	UPROPERTY() TObjectPtr<UStaticMeshComponent> String;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Model;	// the Fab "Cool Bow" when it is in the project
 	UPROPERTY() TObjectPtr<UMaterialInterface> BaseMaterial;
 };

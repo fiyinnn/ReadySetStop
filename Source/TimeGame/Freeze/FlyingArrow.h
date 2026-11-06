@@ -28,5 +28,9 @@ protected:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Shaft;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Tip;
 	UPROPERTY() TArray<TObjectPtr<UStaticMeshComponent>> Feathers;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> Model;	// the Megascans arrow when it is in the project
+
+	/** Flip if the real model flies backwards. */
+	static constexpr bool bFlipModel = false;
 	UPROPERTY() TObjectPtr<UMaterialInterface> BaseMaterial;
 };
