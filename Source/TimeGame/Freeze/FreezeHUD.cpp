@@ -160,7 +160,7 @@ void AFreezeHUD::DrawHUD()
 	if (!GM->HintText.IsEmpty() && GM->IsPlaying())
 	{
 		const float W = 380.f * UI;
-		const float TextScale = 1.0f * UI;
+		const float TextScale = 1.18f * UI;
 		const float Pad = 12.f * UI;
 		TArray<FString> Lines = WrapText(GM->HintText, Small, TextScale, W - Pad * 2.f);
 		float LW = 0.f, LH = 0.f;
@@ -173,7 +173,9 @@ void AFreezeHUD::DrawHUD()
 		DrawText(TEXT("TIP"), FLinearColor(0.75f, 0.8f, 0.9f), X + Pad, Y + Pad, Small, 1.0f * UI);
 		for (int32 i = 0; i < Lines.Num(); ++i)
 		{
+			// Drawn twice, a hair apart, so the tip reads bold
 			DrawText(Lines[i], FLinearColor::White, X + Pad, Y + Pad + 26.f * UI + i * LH, Small, TextScale);
+			DrawText(Lines[i], FLinearColor::White, X + Pad + 0.9f * UI, Y + Pad + 26.f * UI + i * LH, Small, TextScale);
 		}
 		DrawText(TEXT("[X] hide"), FLinearColor(0.6f, 0.6f, 0.65f), X + Pad, Y + H - Pad - 14.f * UI, Small, 0.75f * UI);
 	}

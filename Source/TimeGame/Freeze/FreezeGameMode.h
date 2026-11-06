@@ -114,6 +114,7 @@ protected:
 	void DebugJumpTo(int32 Index);
 	void UpdateLowTimeTicking();
 	void StopTicking();
+	void DuckMusicFor(float Seconds);
 	AActor* FindAimTarget(FVector& OutHitPoint) const;
 	void UpdateArrowKeys(ACharacter* Player);
 	void OpenGate(int32 Index, const FString& Message);
@@ -155,5 +156,7 @@ protected:
 	UPROPERTY() TObjectPtr<class UAudioComponent> Music;
 	UPROPERTY() TObjectPtr<class UAudioComponent> TickLoop;
 	int32 LastTickSecond = -1;
+	float MusicDuckedUntil = 0.f;
+	bool bMusicDucked = false;
 	UPROPERTY() TArray<TObjectPtr<AGeoBlock>> Gates;	// 0 = archery range, 1 = archery arena
 };

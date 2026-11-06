@@ -812,6 +812,20 @@ void AFreezeGameMode::PlaySfx(const TCHAR* Name, float Volume)
 	if (USoundBase* Sound = FindSound(Name))
 	{
 		UGameplayStatics::PlaySound2D(this, Sound, Volume);
+		DuckMusicFor(Sound->GetDuration());
+	}
+}
+
+void AFreezeGameMode::DuckMusicFor(float Seconds)
+{
+	// The music goes quiet while another sound plays, then comes back
+	if (!Music || Seconds <= 0.f || Seconds > 20.f) return;
+	const float Now = GetWorld()->GetTimeSeconds();
+	MusicDuckedUntil = FMath::Max(MusicDuckedUntil, Now + Seconds);
+	if (!bMusicDucked)
+	{
+		bMusicDucked = true;
+		Music->AdjustVolume(0.15f, 0.f);
 	}
 }
 
@@ -859,6 +873,7 @@ void AFreezeGameMode::UpdateLowTimeTicking()
 		// A longer ticking clip: keep one copy running, and stop it when no longer needed
 		if (!TickLoop) TickLoop = UGameplayStatics::SpawnSound2D(this, Tick, 0.6f, 1.f, 0.f, nullptr, false, false);
 		else if (!TickLoop->IsPlaying()) TickLoop->Play();
+		DuckMusicFor(0.5f);
 	}
 }
 
@@ -1112,6 +1127,11 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	InvulnerableLeft -= DeltaSeconds;
 	ShotCooldown = FMath::Max(0.f, ShotCooldown - DeltaSeconds);
 	if (Music && !bFrozen && !Music->IsPlaying()) Music->Play();
+	if (bMusicDucked && Music && GetWorld()->GetTimeSeconds() >= MusicDuckedUntil && !(TickLoop && TickLoop->IsPlaying()))
+	{
+		bMusicDucked = false;
+		Music->AdjustVolume(0.4f, 1.f);
+	}
 	UpdateLowTimeTicking();
 	UpdateArrowKeys(Player);
 
