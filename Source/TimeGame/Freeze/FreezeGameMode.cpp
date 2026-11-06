@@ -753,7 +753,8 @@ void AFreezeGameMode::OnRestartPressed()
 		PlaySfx(TEXT("SFX_Start"));
 		if (USoundBase* Track = LoadObject<USoundBase>(nullptr, TEXT("/Game/Audio/MUS_Background.MUS_Background"), nullptr, LOAD_NoWarn | LOAD_Quiet))
 		{
-			Music = UGameplayStatics::SpawnSound2D(this, Track, 0.35f);
+			// Keep the audio component alive after the track ends so it can be restarted (loops)
+			Music = UGameplayStatics::SpawnSound2D(this, Track, 0.35f, 1.f, 0.f, nullptr, false, false);
 		}
 		if (ACharacter* Player = GetPlayerCharacter())
 		{
@@ -856,7 +857,7 @@ void AFreezeGameMode::UpdateLowTimeTicking()
 	else
 	{
 		// A longer ticking clip: keep one copy running, and stop it when no longer needed
-		if (!TickLoop) TickLoop = UGameplayStatics::SpawnSound2D(this, Tick, 0.6f);
+		if (!TickLoop) TickLoop = UGameplayStatics::SpawnSound2D(this, Tick, 0.6f, 1.f, 0.f, nullptr, false, false);
 		else if (!TickLoop->IsPlaying()) TickLoop->Play();
 	}
 }
