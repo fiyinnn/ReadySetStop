@@ -404,6 +404,7 @@ void AFreezeGameMode::BuildCourse()
 			});
 		}
 		Gates.Add(Block(FVector(X0 + 1400.f, 0.f, H + 250.f), FVector(60.f, 1400.f, 500.f), FreezeColors::Danger));
+		RangeCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
 			TEXT("Pick up the bow. Aim with the mouse: the + in the middle of the screen turns red when it's on a target. Press F to shoot. Freeze the targets first to make it easy. Hit both to open the gate."), X0 + 1400.f);
 	}
@@ -423,6 +424,7 @@ void AFreezeGameMode::BuildCourse()
 			}
 		}
 		Gates.Add(Block(FVector(X0 + 1800.f, 0.f, H + 250.f), FVector(60.f, 1600.f, 500.f), FreezeColors::Danger));
+		ArenaCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 120.f, 0.f, H + 100.f),
 			TEXT("Shoot all three Guards to open the gate. Frozen Guards make easy targets."), X0 + 1800.f);
 	}
@@ -487,6 +489,7 @@ void AFreezeGameMode::BuildCourse()
 		});
 		SpawnSentinel(FVector(X0 + 1600.f, 500.f, H + 120.f), FVector2D(X0 + 50.f, -880.f), FVector2D(X0 + 1950.f, 880.f), 430.f, 3000.f, true);
 		Gate = Block(FVector(X0 + 2000.f, 0.f, H + 300.f), FVector(60.f, 1800.f, 600.f), FreezeColors::Danger);
+		BossCheckpoint = Checkpoints.Num();
 		AddCheckpoint(X0 + 50.f, FVector(X0 + 150.f, 0.f, H + 100.f),
 			TEXT("This Guard's gold armour stops arrows. Gold things keep moving while you freeze. Lead it under the gold press."), X0 + 2000.f);
 	}
@@ -602,6 +605,11 @@ void AFreezeGameMode::InitPlayer(ACharacter* Player)
 			InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AFreezeGameMode::OnFreezePressed);
 			InputComponent->BindKey(EKeys::X, IE_Pressed, this, &AFreezeGameMode::OnCloseHint);
 			InputComponent->BindKey(EKeys::F, IE_Pressed, this, &AFreezeGameMode::OnShootPressed);
+#if WITH_EDITOR
+			// Testing only (not in builds): N jumps to the next checkpoint, B to the previous one
+			InputComponent->BindKey(EKeys::N, IE_Pressed, this, &AFreezeGameMode::DebugNextCheckpoint);
+			InputComponent->BindKey(EKeys::B, IE_Pressed, this, &AFreezeGameMode::DebugPreviousCheckpoint);
+#endif
 			InputComponent->BindKey(EKeys::R, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
 			InputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AFreezeGameMode::OnRestartPressed);
 		}
@@ -685,6 +693,39 @@ void AFreezeGameMode::OnFreezePressed()
 		TimeLeft = 0.f;
 		Lose();
 	}
+}
+
+void AFreezeGameMode::DebugNextCheckpoint() { DebugJumpTo(CurrentCheckpoint + 1); }
+void AFreezeGameMode::DebugPreviousCheckpoint() { DebugJumpTo(CurrentCheckpoint - 1); }
+
+void AFreezeGameMode::DebugJumpTo(int32 Index)
+{
+	if (!IsPlaying() || !Checkpoints.IsValidIndex(Index)) return;
+
+	// Clear whatever would normally stand between you and that checkpoint
+	if (Index > RangeCheckpoint && !bHasBow)
+	{
+		bHasBow = true;
+		ACharacter* Player = GetPlayerCharacter();
+		if (BowPickup && Player)
+		{
+			BowPickup->SetActorEnableCollision(false);
+			BowPickup->AttachToComponent(Player->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("hand_l"));
+		}
+	}
+	if (Index > RangeCheckpoint) OpenGate(0, TEXT("(test) gate opened"));
+	if (Index > ArenaCheckpoint) OpenGate(1, TEXT("(test) gate opened"));
+	if (Index > BossCheckpoint && Gate)
+	{
+		Gate->Destroy();
+		Gate = nullptr;
+	}
+
+	CurrentCheckpoint = Index;
+	HintText = Checkpoints[Index].Hint;
+	HintEndX = Checkpoints[Index].HintEndX;
+	RespawnPlayer();
+	AddMessage(FString::Printf(TEXT("(test) checkpoint %d of %d"), Index, Checkpoints.Num() - 1), FreezeColors::Ice);
 }
 
 void AFreezeGameMode::OnCloseHint()
