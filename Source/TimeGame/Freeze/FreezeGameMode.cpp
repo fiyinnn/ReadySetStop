@@ -1090,7 +1090,11 @@ void AFreezeGameMode::OnShootPressed()
 	PlaySfx(TEXT("SFX_ArrowHit"), 1.f, 0.8f);
 	if (ASentinel* S = Cast<ASentinel>(HitActor))
 	{
-		if (S->bBoss)
+		if (!S->IsGuarding(Player->GetActorLocation()))
+		{
+			AddMessage(TEXT("Too far! Step into their room first."), FLinearColor(0.8f, 0.8f, 0.85f));
+		}
+		else if (S->bBoss)
 		{
 			AddMessage(TEXT("Arrows bounce off its gold armour!"), FreezeColors::Gold);
 		}
@@ -1169,7 +1173,11 @@ void AFreezeGameMode::Tick(float DeltaSeconds)
 	if (bHasBow)
 	{
 		FVector Ignored;
-		bAimOnTarget = FindAimTarget(Ignored) != nullptr;	// crosshair turns red on a target
+		AActor* Aimed = FindAimTarget(Ignored);
+		const ASentinel* AimedGuard = Cast<ASentinel>(Aimed);
+		const ACharacter* Me = GetPlayerCharacter();
+		// crosshair turns red on a target (but not on Guards in a room you haven't entered yet)
+		bAimOnTarget = Aimed && !(AimedGuard && Me && !AimedGuard->IsGuarding(Me->GetActorLocation()));
 	}
 	if (Music && !bFrozen && !Music->IsPlaying()) Music->Play();
 	if (bMusicDucked && Music && GetWorld()->GetTimeSeconds() >= MusicDuckedUntil && !(TickLoop && TickLoop->IsPlaying()))

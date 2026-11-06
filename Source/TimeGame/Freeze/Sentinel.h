@@ -36,6 +36,8 @@ public:
 	void ResetToHome();
 	void Defeat();
 	bool IsDefeated() const { return bDefeated; }
+	/** True when the player is inside this Guard's area (you can only shoot it from in there). */
+	bool IsGuarding(const FVector& PlayerLocation) const { return IsInArea(PlayerLocation); }
 
 protected:
 	virtual void BeginPlay() override;
